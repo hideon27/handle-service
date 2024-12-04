@@ -3,29 +3,26 @@ package com.example.handle.model;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * @BelongsProject:dream_house
- * @BelongsPackage:com.example.dream_house.model
- * @Author:Uestc_Xiye
- * @CreateTime:2023-12-17 16:29:49
- */
-
-@lombok.Data
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel("管理员")
+@ApiModel(value = "工程队信息", description = "存储工程队的详细信息")
 public class Engineering {
+    @ApiModelProperty(value = "自增主键ID", example = "1")
+    private Long id;
 
-    @ApiModelProperty(value = "工程队名称", required = true, example = "1")
-    private String engineering_team_name;
-    @ApiModelProperty(value = "人数", required = true, example = "133")
-    private int number;
-    @ApiModelProperty(value = "主管人姓名", required = true, example = "李四")
-    private String s_name;
-    @ApiModelProperty(value = "联系电话", required = true, example = "11")
-    private String s_tel;
+    @ApiModelProperty(value = "工程队名称", required = true, example = "第一工程队")
+    private String engineeringTeamName;
 
+    @ApiModelProperty(value = "工程队人数", required = true, example = "10")
+    private Integer number;
 
+    @ApiModelProperty(value = "负责人姓名", required = true, example = "李四")
+    private String sName;
+
+    @ApiModelProperty(value = "负责人联系电话", required = true, example = "13900139000")
+    private String sTel;
 }

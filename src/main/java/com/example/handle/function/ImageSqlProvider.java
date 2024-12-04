@@ -5,27 +5,26 @@ import java.util.Map;
 
 public class ImageSqlProvider {
     public String getImageInfoByDynamicParams(Map<String, Object> params) {
-        String sql = new SQL() {{
+        return new SQL() {{
             SELECT("i.image_name, s.stratum_name, i.ima_start, i.ima_end");
-            FROM("image_info i");
-            LEFT_OUTER_JOIN("stratums s ON i.image_sid = s.stratum_id");
+            FROM("core_segments i");
+            LEFT_OUTER_JOIN("stratums s ON i.stratum_id = s.stratum_id");
             
             if (params.get("image_sid") != null) {
-                WHERE("image_sid LIKE CONCAT('%', #{image_sid}, '%')");
+                WHERE("i.stratum_id LIKE CONCAT('%', #{image_sid}, '%')");
             }
             if (params.get("ima_start") != null) {
-                WHERE("ima_start > #{ima_start}");
+                WHERE("i.seg_start > #{ima_start}");
             }
             if (params.get("ima_end") != null) {
-                WHERE("ima_end < #{ima_end}");
+                WHERE("i.seg_end < #{ima_end}");
             }
             if (params.get("ima_depth") != null) {
-                WHERE("ima_depth = #{ima_depth}");
+                WHERE("i.seg_len = #{ima_depth}");
             }
             if (params.get("s_type") != null) {
-                WHERE("s_type LIKE CONCAT('%', #{s_type}, '%')");
+                WHERE("i.seg_type LIKE CONCAT('%', #{s_type}, '%')");
             }
         }}.toString();
-        return sql; 
     }
 }
