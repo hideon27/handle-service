@@ -9,8 +9,9 @@ public class ImageSqlProvider {
             SELECT("i.image_name, s.stratum_name, i.ima_start, i.ima_end");
             FROM("image_info i");
             LEFT_OUTER_JOIN("stratums s ON i.image_sid = s.stratum_id");
+            
             if (params.get("image_sid") != null) {
-                WHERE("image_sid = #{image_sid}");
+                WHERE("image_sid LIKE CONCAT('%', #{image_sid}, '%')");
             }
             if (params.get("ima_start") != null) {
                 WHERE("ima_start > #{ima_start}");
@@ -22,12 +23,9 @@ public class ImageSqlProvider {
                 WHERE("ima_depth = #{ima_depth}");
             }
             if (params.get("s_type") != null) {
-                WHERE("s_type = #{s_type}");
+                WHERE("s_type LIKE CONCAT('%', #{s_type}, '%')");
             }
-
-            // 根据需要添加更多条件
         }}.toString();
-        //System.out.println("Generated SQL: " + sql);
         return sql; 
     }
 }
