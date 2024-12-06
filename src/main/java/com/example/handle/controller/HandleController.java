@@ -26,6 +26,7 @@ import org.springframework.util.Base64Utils;
 import com.example.handle.dto.ApiResponse;
 import com.example.handle.dto.requestdata.*;
 import com.example.handle.dto.resultdata.*;
+import com.example.handle.model.Stratums;
 
 
 @Api(tags = "API接口")
@@ -254,15 +255,29 @@ public class HandleController {
         return ApiResponse.success(Collections.singletonMap("result", result));
     }
 
-    @ApiOperation("根据输入参数获得图片信息")
+    @ApiOperation("获得地层信息")
+    @GetMapping("/change/showStratumInfo")
+    public ApiResponse<?> showStratumInfo(@RequestParam String stratumId) {
+        List<Stratums> result;
+        try {
+            result = handleService.getStratumInfoByName(stratumId);
+        } catch (DataAccessException e) {
+            return ApiResponse.fail("查询失败");
+        }
+        return ApiResponse.success(Collections.singletonMap("result", result));
+    }
+
+    @ApiOperation("根据输入参数获得图片信息(segType和imageName都为模糊查询)")
     @PostMapping("/get/getImageInfo")
     public ApiResponse<?> getImageInfo(@RequestBody CoreSegmentQueryDTO queryDTO) {
         Map<String, Object> params = new HashMap<>();
-        params.put("image_sid", queryDTO.getImageSid());
-        params.put("ima_start", queryDTO.getImageStart());
-        params.put("ima_end", queryDTO.getImageEnd());
-        params.put("ima_depth", queryDTO.getImageDepth());
-        params.put("s_type", queryDTO.getImageType());
+        params.put("image_name", queryDTO.getImageName());
+        params.put("seg_start", queryDTO.getSegStart());
+        params.put("seg_end", queryDTO.getSegEnd());
+        params.put("seg_len", queryDTO.getSegLen());
+        params.put("seg_type", queryDTO.getSegType());
+        params.put("stratum_id", queryDTO.getStratumId());
+        params.put("uploader_num", queryDTO.getUploaderNum());
         
         List<ImageAndStratumDTO> result = handleService.getImageInfoByDynamicParams(params);
         return ApiResponse.success(Collections.singletonMap("result", result));
@@ -270,25 +285,22 @@ public class HandleController {
 
     @ApiOperation("根据输入参数获得图片信息")
     @GetMapping("/get/getImageInfo")
-    public ApiResponse<?> getImageInfo_get(@RequestParam(required = false) String imageSid,
-                                                   @RequestParam(required = false) String imageStart,
-                                                   @RequestParam(required = false) String imageEnd,
-                                                   @RequestParam(required = false) String imageDepth,
-                                                   @RequestParam(required = false) String imageType) {
+    public ApiResponse<?> getImageInfo_get(@RequestParam(required = false) String imageName,
+                                                   @RequestParam(required = false) String segStart,
+                                                   @RequestParam(required = false) String segEnd,
+                                                   @RequestParam(required = false) String segLen,
+                                                   @RequestParam(required = false) String segType,
+                                                   @RequestParam(required = false) String stratumId,
+                                                   @RequestParam(required = false) String uploaderNum) {
         Map<String, Object> params = new HashMap<>();
-
-        List<ImageAndStratumDTO> result;
-        params.put("image_sid", imageSid);
-        params.put("ima_start", imageStart);
-        params.put("ima_end", imageEnd);
-        params.put("ima_depth", imageDepth);
-        params.put("s_type", imageType);
-        System.out.println(params);
-        try {
-            result = handleService.getImageInfoByDynamicParams(params);
-        } catch (DataAccessException e) {
-            return ApiResponse.fail("无法查询");
-        }
+        params.put("image_name", imageName);
+        params.put("seg_start", segStart);
+        params.put("seg_end", segEnd);
+        params.put("seg_len", segLen);
+        params.put("seg_type", segType);
+        params.put("stratum_id", stratumId);
+        params.put("uploader_num", uploaderNum);
+        List<ImageAndStratumDTO> result = handleService.getImageInfoByDynamicParams(params);
         return ApiResponse.success(Collections.singletonMap("result", result));
     }
 
@@ -308,12 +320,11 @@ public class HandleController {
     @ApiOperation("根据输入参数获得用户信息")
     @GetMapping("/get/getUserInfo")
     public ApiResponse<?> getUserInfo_get(@RequestParam(required = false) String account,
-                                                   @RequestParam(required = false) String num,
-                                                   @RequestParam(required = false) String name,
-                                                   @RequestParam(required = false) String sex,
-                                                   @RequestParam(required = false) String tel) {
+                                               @RequestParam(required = false) String num,
+                                               @RequestParam(required = false) String name,
+                                               @RequestParam(required = false) String sex,
+                                               @RequestParam(required = false) String tel) {
         Map<String, Object> params = new HashMap<>();
-
         List<Users> result;
         params.put("u_account", account);
         params.put("u_num", num);
@@ -323,7 +334,35 @@ public class HandleController {
         System.out.println(params);
         try {
             result = handleService.getUserInfoByDynamicParams(params);
-            return ApiResponse.success(Collections.singletonMap("result", result));
+            Map<String, Object> response = new HashMap<>();
+            response.put("result", result);
+            return ApiResponse.success(response);
+        } catch (DataAccessException e) {
+            return ApiResponse.fail("查询失败");
+        }
+    }
+
+    @ApiOperation("根据输入参数获得地层信息(id,name,add,pro都为模糊查询)")
+    @GetMapping("/get/getStratumInfo")
+    public ApiResponse<?> getStratumInfo(@RequestParam(required = false) String stratumId,
+                                       @RequestParam(required = false) String stratumName,
+                                       @RequestParam(required = false) String stratumLen,
+                                       @RequestParam(required = false) String stratumAdd,
+                                       @RequestParam(required = false) String stratumPro,
+                                       @RequestParam(required = false) String stratumIntegrity) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("stratum_id", stratumId);
+        params.put("stratum_name", stratumName);
+        params.put("stratum_len", stratumLen);
+        params.put("stratum_add", stratumAdd);
+        params.put("stratum_pro", stratumPro);
+        params.put("integrity", stratumIntegrity);
+
+        try {
+            List<Stratums> result = handleService.getStratumInfoByDynamicParams(params);
+            Map<String, Object> response = new HashMap<>();
+            response.put("result", result);
+            return ApiResponse.success(response);
         } catch (DataAccessException e) {
             return ApiResponse.fail("查询失败");
         }
@@ -394,21 +433,49 @@ public class HandleController {
         return ApiResponse.success(Collections.singletonMap("result", "更新成功"));
     }
 
+    
+    @ApiOperation("更新地层信息")
+    @PostMapping("/change/updateSubmitStratum")
+    public ApiResponse<?> updateSubmitStratum(@RequestBody Map<String, String> receivedData) {
+        String oldStratumId = receivedData.get("oldStratumId");
+        String stratumId = receivedData.get("stratumId");
+        String stratumName = receivedData.get("stratumName");
+        double stratumLen = Double.parseDouble(receivedData.get("stratumLen"));
+        String stratumAdd = receivedData.get("stratumAdd");
+        String stratumPro = receivedData.get("stratumPro");
+        String stratumIntegrity = receivedData.get("stratumIntegrity");
+
+        try {
+            handleService.updateStratumInfoById(oldStratumId, stratumId, stratumName, stratumLen, stratumAdd, stratumPro, stratumIntegrity);
+        } catch (DataAccessException e) {
+            return ApiResponse.fail("更新失败");
+        }
+        return ApiResponse.success(Collections.singletonMap("result", "更新成功"));
+    }
+
     @ApiOperation("插入岩柱信息")
     @PostMapping("/post/insertStratum")
     public ApiResponse<?> insertStratum(@RequestBody Map<String, String> receivedData) {
-        // String stratumId = receivedData.get("stratumId");
-        // String stratumName = receivedData.get("stratumName");
-        // double stratumLen = Double.parseDouble(receivedData.get("stratumLen"));
-        // String stratumAdd = receivedData.get("stratumAdd");
-        // String stratumPro = receivedData.get("stratumPro");
-        //TODO: 插入地层信息
-        return ApiResponse.success(Collections.singletonMap("result", "插入成功"));
+        String stratumId = receivedData.get("stratumId");
+        String stratumName = receivedData.get("stratumName");
+        double stratumLen = Double.parseDouble(receivedData.get("stratumLen"));
+        String stratumAdd = receivedData.get("stratumAdd");
+        String stratumPro = receivedData.get("stratumPro");
+        try {
+            int result = handleService.insertStratumInfo(stratumId, stratumName, stratumLen, stratumAdd, stratumPro);
+            if (result == 1) {
+                return ApiResponse.success(Collections.singletonMap("result", "插入成功"));
+            } else {
+                return ApiResponse.fail("插入失败");
+            }
+        } catch (DataAccessException e) {
+            return ApiResponse.fail("插入失败：" + e.getMessage());
+        }
     }
 
     @ApiOperation("检查岩柱完整性(触发式)")
-    @GetMapping("/get/checkStratumIntegrity_triger")
-    public ApiResponse<?> checkStratumIntegrity_triger(@RequestParam String stratumId) {
+    @GetMapping("/get/checkStratumIntegrity_trigger")
+    public ApiResponse<?> checkStratumIntegrity_trigger(@RequestParam String stratumId) {
         //插入岩芯信息时检查岩柱完整性(触发式)，检查某个stratumId的完整性
         //TODO: 检查岩柱完整性
         return ApiResponse.success(Collections.singletonMap("result", "检查成功"));
@@ -416,7 +483,7 @@ public class HandleController {
 
     @ApiOperation("检查岩柱完整性(非触发式)")
     @GetMapping("/get/checkStratumIntegrity_notrigger")
-    public ApiResponse<?> checkStratumIntegrity_notriger() {
+    public ApiResponse<?> checkStratumIntegrity_notrigger() {
         //一般是全局检查，速度较慢，可以设置定时任务，防止事务导致触发式失效
         //TODO: 检查岩柱完整性
         return ApiResponse.success(Collections.singletonMap("result", "检查成功"));
@@ -457,4 +524,17 @@ public class HandleController {
         }
         return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
     }
+
+    @ApiOperation("删除地层")
+    @PostMapping("/change/deleteStratum")
+    public ApiResponse<?> deleteStratum(@RequestBody Map<String, String> receivedData) {
+        String stratumId = receivedData.get("stratumId");
+        try {
+            handleService.deleteStratumInfoById(stratumId);
+        } catch (DataAccessException e) {
+            return ApiResponse.fail("删除失败");
+        }
+        return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
+    }
+    
 }

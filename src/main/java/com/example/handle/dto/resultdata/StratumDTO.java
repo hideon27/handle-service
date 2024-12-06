@@ -12,4 +12,7 @@ public class StratumDTO {
 
     @ApiModelProperty(value = "地层编号", example = "S2023001")
     private String stratumId;
+
+    @ApiModelProperty(value = "地层深度", example = "10.500")
+    private Double stratumLen;
 } 

@@ -14,8 +14,8 @@ public class ImageAndStratumDTO {
     private String stratumName;
 
     @ApiModelProperty(value = "起始深度", example = "10.500")
-    private Double imaStart;
+    private Double segStart;
 
     @ApiModelProperty(value = "结束深度", example = "20.500")
-    private Double imaEnd;
+    private Double segEnd;
 } 

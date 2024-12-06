@@ -1,5 +1,6 @@
 package com.example.handle.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -18,41 +19,54 @@ public class CoreSegments {
     private Long id;
 
     @ApiModelProperty(value = "图像编号(业务主键)", required = true, example = "IMG2023001")
+    @JsonProperty("imageId")
     private String imageId;
 
     @ApiModelProperty(value = "图像名称", required = true, example = "海淀区岩心样本1")
+    @JsonProperty("imageName")
     private String imageName;
 
     @ApiModelProperty(value = "图像存储路径", required = true, example = "/images/core/2023/001.jpg")
+    @JsonProperty("imagePath")
     private String imagePath;
 
     @ApiModelProperty(value = "上传时间", example = "2023-12-25 10:30:00")
+    @JsonProperty("uploadTime")
     private Timestamp uploadTime;
 
     @ApiModelProperty(value = "上传者工号", required = true, example = "U2023001")
+    @JsonProperty("uploaderNum")
     private String uploaderNum;
 
     @ApiModelProperty(value = "段起始深度(米)", required = true, example = "10.500")
+    @JsonProperty("segStart")
     private Double segStart;
 
     @ApiModelProperty(value = "段结束深度(米)", required = true, example = "20.500")
+    @JsonProperty("segEnd")
     private Double segEnd;
 
     @ApiModelProperty(value = "段长度(米)", required = true, example = "10.000")
+    @JsonProperty("segLen")
     private Double segLen;
 
     @ApiModelProperty(value = "岩心段类型", required = true, example = "砂岩")
+    @JsonProperty("segType")
     private String segType;
 
     @ApiModelProperty(value = "序列号", example = "1")
+    @JsonProperty("sequenceNo")
     private Integer sequenceNo;
 
     @ApiModelProperty(value = "所属地层编号", required = true, example = "S2023001")
+    @JsonProperty("stratumId")
     private String stratumId;
 
     @ApiModelProperty(value = "地层长度(米)", required = true, example = "100.500")
+    @JsonProperty("stratumLen")
     private Double stratumLen;
 
     @ApiModelProperty(value = "最后编辑时间", example = "2023-12-25 15:30:00")
+    @JsonProperty("editTime")
     private Timestamp editTime;
 }

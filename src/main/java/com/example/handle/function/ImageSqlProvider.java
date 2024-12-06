@@ -6,24 +6,30 @@ import java.util.Map;
 public class ImageSqlProvider {
     public String getImageInfoByDynamicParams(Map<String, Object> params) {
         return new SQL() {{
-            SELECT("i.image_name, s.stratum_name, i.ima_start, i.ima_end");
+            SELECT("i.image_name, s.stratum_name, i.seg_start, i.seg_end");
             FROM("core_segments i");
             LEFT_OUTER_JOIN("stratums s ON i.stratum_id = s.stratum_id");
             
-            if (params.get("image_sid") != null) {
-                WHERE("i.stratum_id LIKE CONCAT('%', #{image_sid}, '%')");
+            if (params.get("image_name") != null) {
+                WHERE("i.image_name LIKE CONCAT('%', #{image_name}, '%')");
             }
-            if (params.get("ima_start") != null) {
-                WHERE("i.seg_start > #{ima_start}");
+            if (params.get("stratum_id") != null) {
+                WHERE("i.stratum_id = #{stratum_id}");
             }
-            if (params.get("ima_end") != null) {
-                WHERE("i.seg_end < #{ima_end}");
+            if (params.get("seg_start") != null) {
+                WHERE("i.seg_start > #{seg_start}");
             }
-            if (params.get("ima_depth") != null) {
-                WHERE("i.seg_len = #{ima_depth}");
+            if (params.get("seg_end") != null) {
+                WHERE("i.seg_end < #{seg_end}");
             }
-            if (params.get("s_type") != null) {
-                WHERE("i.seg_type LIKE CONCAT('%', #{s_type}, '%')");
+            if (params.get("seg_len") != null) {
+                WHERE("i.seg_len = #{seg_len}");
+            }
+            if (params.get("seg_type") != null) {
+                WHERE("i.seg_type LIKE CONCAT('%', #{seg_type}, '%')");
+            }
+            if (params.get("uploader_num") != null) {
+                WHERE("i.uploader_num = #{uploader_num}");
             }
         }}.toString();
     }

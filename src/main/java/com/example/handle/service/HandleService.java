@@ -1,116 +1,139 @@
 package com.example.handle.service;
 
-import com.example.handle.dto.resultdata.EngineeringDTO;
-import com.example.handle.dto.resultdata.ImageAndStratumDTO;
-import com.example.handle.dto.resultdata.StratumDTO;
 import com.example.handle.mapper.HandleMapper;
 import com.example.handle.model.CoreSegments;
 import com.example.handle.model.Users;
-
-
+import com.example.handle.model.Administrators;
+import com.example.handle.model.Stratums;
+import com.example.handle.dto.resultdata.EngineeringDTO;
+import com.example.handle.dto.resultdata.ImageAndStratumDTO;
+import com.example.handle.dto.resultdata.StratumDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
-
 
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class HandleService {
-
-    @Autowired(required = false)
+    @Autowired
     private HandleMapper handleMapper;
 
-    ////select
-    //查找工程队
-    public List<EngineeringDTO> getEngineeringTeamName(){
-        return handleMapper.getEngineeringTeamName();
+    //// 1. 用户认证相关方法
+    public int getResultByNamePassword(String username, String password) {
+        return handleMapper.getResultByNamePassword(username, password);
     }
-    //从岩芯表获得岩芯信息
-    public List<StratumDTO> getStratumName(){
-        return handleMapper.getStratumName();
+
+    public int getResultByNamePasswordAdmin(String username, String password) {
+        return handleMapper.getResultByNamePasswordAdmin(username, password);
     }
-    //通过姓名获取用户信息
-    public Users getUserInfoByAccount(String name)throws DataAccessException{
-        return handleMapper.getUserInfoByAccount(name);
+
+    public int insertUser(String username, String number, String password, String name,
+                         String sex, String id, String email, String tel, String en) throws DataAccessException {
+        return handleMapper.insertUser(username, number, password, name, sex, id, email, tel, en);
     }
-    //获得图片信息
-    public List<CoreSegments> getImageInfoByName(String image_name)throws DataAccessException{
-        return handleMapper.getImageInfoByName(image_name);
+
+    public void updateLastLoginTime(String uAccount) {
+        handleMapper.updateLastLoginTime(uAccount);
     }
-    public List<Users> getUserInfoByName(String account)throws DataAccessException{
-        return handleMapper.getUserInfoByName(account);
+
+    public void updateAdminLastLoginTime(String aAccount) {
+        handleMapper.updateAdminLastLoginTime(aAccount);
     }
-    //通过账户和工号查询用户信息
-    public List<Users> getUserInfoByAccNum(String account,String num)throws  DataAccessException{
-        return handleMapper.getUserInfoByAccNum(account,num);
+
+    public Users getUserInfoByAccount(String name) throws DataAccessException {
+        return handleMapper.getUserByAccount(name);
     }
-    //通过姓名和密码获得匹配结果，1为通过，0为未通过
-    public int getResultByNamePassword(String u_account, String u_password) {
-        int count = handleMapper.getResultByNamePassword(u_account, u_password);
-        return count > 0 ? 1 : 0;
-    }
-    public int getResultByNamePasswordAdmin(String a_account, String a_password) {
-        int count = handleMapper.getResultByNamePasswordAdmin(a_account, a_password);
-        return count > 0 ? 1 : 0;
-    }
-    //通过账户号查找工号
-    public String getIdByAccount(String u_account){
+
+    //// 2. 图片上传和处理相关方法
+    public String getIdByAccount(String u_account) throws DataAccessException {
         return handleMapper.getIdByAccount(u_account);
     }
-    //通过输入参数情况进行动态查询
-    public List<ImageAndStratumDTO> getImageInfoByDynamicParams(Map<String, Object> params)throws DataAccessException{
+
+    public int insertImageInfo(String imageId, String imageName, String imagePath,
+                             String uploaderNum, String stratumId, double stratumLen,
+                             double segStart, double segEnd, double segLen,
+                             String segType, String sequenceNo) throws DataAccessException {
+        return handleMapper.insertImageInfo(imageId, imageName, imagePath, uploaderNum,
+                stratumId, stratumLen, segStart, segEnd, segLen, segType, sequenceNo);
+    }
+
+    public int insertStratumInfo(String stratumId, String stratumName, double stratumLen,
+                              String stratumAdd, String stratumPro) throws DataAccessException {
+        return handleMapper.insertStratumInfo(stratumId, stratumName, stratumLen, stratumAdd, stratumPro);
+    }
+
+    //// 3. 基础数据查询方法
+    public List<EngineeringDTO> getEngineeringTeamName() {
+        return handleMapper.getEngineeringTeamName();
+    }
+
+    public List<StratumDTO> getStratumName() {
+        return handleMapper.getStratumName();
+    }
+
+    public List<CoreSegments> getImageInfoByName(String image_name) throws DataAccessException {
+        return handleMapper.getImageInfoByName(image_name);
+    }
+
+    public List<ImageAndStratumDTO> getImageInfoByDynamicParams(Map<String, Object> params) {
         return handleMapper.getImageInfoByDynamicParams(params);
+    }
+
+    public List<Users> getUserInfoByName(String u_account) throws DataAccessException {
+        return handleMapper.getUserInfoByName(u_account);
     }
 
     public List<Users> getUserInfoByDynamicParams(Map<String, Object> params) throws DataAccessException {
         return handleMapper.getUserInfoByDynamicParams(params);
     }
 
-    ////insert
-    //用户信息插入
-    public int insertUser(String u_account,String u_num, String u_password,String u_name,
-                          String u_sex,String u_id,String u_email, String u_tel,String u_et_name) throws DataAccessException{
-        return handleMapper.insertUser(u_account,u_num,u_password,u_name,u_sex,u_id,u_email,u_tel,u_et_name);
-    }
-    //图片信息插入
-    public int insertImageInfo(String image_id,String image_name, String image_path, String uploader_num, 
-                         String stratum_id,double stratum_len, double seg_start, double seg_end, 
-                         double seg_len, String seg_type, String sequence_no) {
-        return handleMapper.insertImageInfo(image_id,image_name, image_path, uploader_num, 
-                                          stratum_id,stratum_len, seg_start, seg_end, 
-                                          seg_len, seg_type, sequence_no);
+    public List<Stratums> getStratumInfoByName(String stratum_id) throws DataAccessException {
+        return handleMapper.getStratumInfoByName(stratum_id);
     }
 
-    ////update
-    //通过名字更新图片信息
-    public void updateImageInfoByName(String imageName, String stratumId, double segStart,
-                               double segEnd, double segLen, String segType, String oldImageName) {
-        handleMapper.updateImageInfoByName(imageName, stratumId, segStart, segEnd, segLen, segType, oldImageName);
-    }
-    public void updateUserInfoByAccount( String u_oldAccount,String u_account,String u_num,String u_password,String u_name, String u_sex, String u_id, String u_email, String u_tel, String u_et_name){
-        handleMapper.updateUserInfoByAccount(u_oldAccount,u_account,u_num,u_password,u_name,u_sex,u_id,u_email,u_tel,u_et_name);
+    public List<Stratums> getStratumInfoByDynamicParams(Map<String, Object> params) throws DataAccessException {
+        return handleMapper.getStratumInfoByDynamicParams(params);
     }
 
-    //更新用户最后登录时间
-    public void updateLastLoginTime(String uAccount) {
-        handleMapper.updateLastLoginTime(uAccount);
+    //// 4. 信息管理相关方法
+    public List<Users> getUserInfoByAccNum(String account, String num) throws DataAccessException {
+        return handleMapper.getUserInfoByAccNum(account, num);
     }
 
-    //更新管理员最后登录时间
-    public void updateAdminLastLoginTime(String aAccount) {
-        handleMapper.updateAdminLastLoginTime(aAccount);
+    public void updateImageInfoByName(String imageName, String stratumId,
+                                    double segStart, double segEnd, double segLen,
+                                    String segType, String oldImageName) {
+        handleMapper.updateImageInfoByName(imageName, stratumId, segStart, segEnd,
+                segLen, segType, oldImageName);
     }
 
-    ////delete
-    //通过图片名删除图片信息
-    public void deleteImageInfoByImageName(String image_name){
+    public void updateUserInfoByAccount(String u_oldAccount, String u_account,
+                                      String u_num, String u_password, String u_name,
+                                      String u_sex, String u_id, String u_email,
+                                      String u_tel, String u_et_name) throws DataAccessException {
+        handleMapper.updateUserInfoByAccount(u_oldAccount, u_account, u_num,
+                u_password, u_name, u_sex, u_id, u_email, u_tel, u_et_name);
+    }
+
+    public void updateStratumInfoById(String oldStratumId, String stratumId,
+                                    String stratumName, double stratumLen,
+                                    String stratumAdd, String stratumPro,
+                                    String integrity) throws DataAccessException {
+        handleMapper.updateStratumInfoById(oldStratumId, stratumId, stratumName,
+                stratumLen, stratumAdd, stratumPro, integrity);
+    }
+
+    public void deleteImageInfoByImageName(String image_name) throws DataAccessException {
         handleMapper.deleteImageInfoByImageName(image_name);
     }
 
-    public void deleteUserInfoByAccount(String u_account){
+    public void deleteUserInfoByAccount(String u_account) throws DataAccessException {
         handleMapper.deleteUserInfoByAccount(u_account);
     }
 
+    public void deleteStratumInfoById(String stratum_id) throws DataAccessException {
+        handleMapper.deleteStratumInfoById(stratum_id);
+    }
 }
