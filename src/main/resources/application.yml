@@ -9,11 +9,6 @@ spring:
       
   # MySQL数据库配置
   datasource:
-      url: jdbc:mysql://110.40.170.232:3306/handle
-      username: admin
-      password: Xuziyuan123
-      driver-class-name: com.mysql.cj.jdbc.Driver
-    
     
     # HikariCP 连接池配置
   hikari:
