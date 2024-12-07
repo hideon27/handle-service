@@ -271,7 +271,8 @@ public interface HandleMapper {
             "FROM stratums s " +
             "LEFT JOIN core_segments cs " +
             "ON s.stratum_id = cs.stratum_id " +
-            "WHERE s.stratum_id = #{stratumId}")
+            "WHERE s.stratum_id = #{stratumId}"
+            )
     List<Map<String, Object>> getStratumAndSegments(String stratumId);
 
     /**
@@ -291,5 +292,12 @@ public interface HandleMapper {
      */
     @Select("SELECT stratum_len FROM stratums WHERE stratum_id = #{stratumId}")
     Double getStratumLength(String stratumId);
+
+    @Update("UPDATE core_segments " +
+            "SET sequence_no = #{sequenceNo} " +
+            "WHERE stratum_id = #{stratumId} AND seg_start = #{segStart}")
+    void updateSequenceNo(@Param("stratumId") String stratumId,
+                          @Param("segStart") Double segStart,
+                          @Param("sequenceNo") int sequenceNo);
 }
 

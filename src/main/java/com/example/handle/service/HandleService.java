@@ -13,9 +13,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class HandleService {
@@ -146,6 +144,22 @@ public class HandleService {
 
         // 校验岩芯段长度之和是否等于岩柱长度
         boolean isValid = stratumLength != null && totalSegmentLength != null && stratumLength.equals(totalSegmentLength);
+        if (isValid) {
+            // 按 seg_start 进行排序
+            Collections.sort(stratumAndSegments, (o1, o2) -> {
+                Double segStart1 = ((Number) o1.get("seg_start")).doubleValue();
+                Double segStart2 = ((Number) o2.get("seg_start")).doubleValue();
+                return Double.compare(segStart1, segStart2);
+            });
+
+            // 更新 sequence_no
+            int sequenceNo = 1;
+            for (Map<String, Object> segment : stratumAndSegments) {
+                segment.put("sequence_no", sequenceNo);
+                handleMapper.updateSequenceNo(stratumId, (Double) segment.get("seg_start"), sequenceNo);
+                sequenceNo++;
+            }
+        }
 
         // 构造返回结果
         Map<String, Object> result = new HashMap<>();
