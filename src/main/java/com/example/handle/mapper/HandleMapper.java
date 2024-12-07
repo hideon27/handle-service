@@ -238,5 +238,58 @@ public interface HandleMapper {
     @Select("SELECT * FROM administrators WHERE a_account = #{a_account}")
     Administrators getAdminByAccount(@Param("a_account") String a_account);
 
+
+    //插入岩柱信息
+    @Insert("INSERT INTO stratums (stratum_id, stratum_name, stratum_len, stratum_add, stratum_pro)"+
+            "VALUES (#{stratumId}, #{stratumName}, #{stratumLen}, #{stratumAdd}, #{stratumPro})")
+
+    int insertStratum(@Param("stratumId") String stratumId,
+                      @Param("stratumName") String stratumName,
+                      @Param("stratumLen") double stratumLen,
+                      @Param("stratumAdd") String stratumAdd,
+                      @Param("stratumPro") String stratumPro)throws DataAccessException;
+
+
+    /**
+     * 根据岩柱ID获取所有岩芯段信息
+     *
+     * @param stratumId 岩柱ID
+     * @return 岩芯段信息列表
+     */
+    @Select("SELECT " +
+            "s.stratum_id, " +
+            "s.stratum_name, " +
+            "s.stratum_len, " +
+            "s.stratum_add, " +
+            "cs.image_id, " +
+            "cs.image_path, " +
+            "cs.seg_start, " +
+            "cs.seg_end, " +
+            "cs.seg_len, " +
+            "cs.seg_type, " +
+            "cs.sequence_no " +
+            "FROM stratums s " +
+            "LEFT JOIN core_segments cs " +
+            "ON s.stratum_id = cs.stratum_id " +
+            "WHERE s.stratum_id = #{stratumId}")
+    List<Map<String, Object>> getStratumAndSegments(String stratumId);
+
+    /**
+     * 获取指定岩柱的岩芯段总长度，用于校验
+     *
+     * @param stratumId 岩柱ID
+     * @return 岩芯段总长度
+     */
+    @Select("SELECT SUM(seg_len) FROM core_segments WHERE stratum_id = #{stratumId}")
+    Double getTotalSegmentLength(String stratumId);
+
+    /**
+     * 获取岩柱的长度
+     *
+     * @param stratumId 岩柱ID
+     * @return 岩柱长度
+     */
+    @Select("SELECT stratum_len FROM stratums WHERE stratum_id = #{stratumId}")
+    Double getStratumLength(String stratumId);
 }
 

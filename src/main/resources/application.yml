@@ -9,10 +9,14 @@ spring:
       
   # MySQL数据库配置
   datasource:
+      url: jdbc:mysql://110.40.170.232:3306/handle
+      username: admin
+      password: Xuziyuan123
+      driver-class-name: com.mysql.cj.jdbc.Driver
     
     
     # HikariCP 连接池配置
-    hikari:
+  hikari:
       connection-timeout: 20000    # 数据库连接超时时间(毫秒)
       maximum-pool-size: 100       # 最大数据库连接数
       minimum-idle: 20             # 数据库连接池保持数据连接的最小数量

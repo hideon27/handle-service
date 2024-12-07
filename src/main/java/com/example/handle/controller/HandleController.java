@@ -397,21 +397,40 @@ public class HandleController {
     @ApiOperation("插入岩柱信息")
     @PostMapping("/post/insertStratum")
     public ApiResponse<?> insertStratum(@RequestBody Map<String, String> receivedData) {
-        // String stratumId = receivedData.get("stratumId");
-        // String stratumName = receivedData.get("stratumName");
-        // double stratumLen = Double.parseDouble(receivedData.get("stratumLen"));
-        // String stratumAdd = receivedData.get("stratumAdd");
-        // String stratumPro = receivedData.get("stratumPro");
-        //TODO: 插入地层信息
-        return ApiResponse.success(Collections.singletonMap("result", "插入成功"));
+        String stratumId = receivedData.get("stratumId");
+        String stratumName = receivedData.get("stratumName");
+        double stratumLen = Double.parseDouble(receivedData.get("stratumLen"));
+        String stratumAdd = receivedData.get("stratumAdd");
+        String stratumPro = receivedData.get("stratumPro");
+        //System.out.println("插入数据: {}, {}, {}, {}, {}"+stratumId);
+
+        try {
+            // 调用 Service 层方法来插入地层信息
+            int result = handleService.insertStratum(stratumId, stratumName, stratumLen, stratumAdd, stratumPro);
+            if (result == 1) {
+                return ApiResponse.success(Collections.singletonMap("result", "插入成功"));
+            } else {
+                return ApiResponse.fail("插入失败");
+            }
+        } catch (DataAccessException e) {
+            //TODO: 插入地层信息
+            return ApiResponse.fail(e.getMessage());
+        }catch (Exception e) {
+
+            return ApiResponse.fail("未知错误：" + e.getMessage());
+        }
     }
 
     @ApiOperation("检查岩柱完整性(触发式)")
     @GetMapping("/get/checkStratumIntegrity_triger")
-    public ApiResponse<?> checkStratumIntegrity_triger(@RequestParam String stratumId) {
-        //插入岩芯信息时检查岩柱完整性(触发式)，检查某个stratumId的完整性
-        //TODO: 检查岩柱完整性
-        return ApiResponse.success(Collections.singletonMap("result", "检查成功"));
+    public ApiResponse<?> checkStratumIntegrity(@RequestParam String stratumId) {
+        try {
+            // 调用 Service 层方法
+            Map<String, Object> result = handleService.validateStratumIntegrity(stratumId);
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            return ApiResponse.fail(e.getMessage());
+        }
     }
 
     @ApiOperation("检查岩柱完整性(非触发式)")
@@ -457,4 +476,18 @@ public class HandleController {
         }
         return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
     }
+
+//    @ApiOperation("编录")
+//    @PostMapping("/Catalog")
+//    public ApiResponse<?> Catalog(@RequestBody Map<String, String> receivedData, HttpServletRequest request) {
+//        String u_account = receivedData.get("u_account");
+//        try {
+//            handleService.deleteUserInfoByAccount(u_account);
+//        } catch (DataAccessException e) {
+//            return ApiResponse.fail("删除失败");
+//        }
+//        return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
+//    }
+
+
 }
