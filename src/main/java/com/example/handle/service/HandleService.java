@@ -3,7 +3,7 @@ package com.example.handle.service;
 import com.example.handle.mapper.HandleMapper;
 import com.example.handle.model.CoreSegments;
 import com.example.handle.model.Users;
-import com.example.handle.model.Administrators;
+//import com.example.handle.model.Administrators;
 import com.example.handle.model.Stratums;
 import com.example.handle.dto.resultdata.EngineeringDTO;
 import com.example.handle.dto.resultdata.ImageAndStratumDTO;
@@ -12,8 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class HandleService {
@@ -63,6 +62,33 @@ public class HandleService {
                               String stratumAdd, String stratumPro) throws DataAccessException {
         return handleMapper.insertStratumInfo(stratumId, stratumName, stratumLen, stratumAdd, stratumPro);
     }
+
+
+    public Map<String, Object> validateStratumIntegrity(String stratumId) {
+        Double stratumLength = handleMapper.getStratumLength(stratumId);
+        Double totalSegmentLength = handleMapper.getTotalSegmentLength(stratumId);
+        List<Map<String, Object>> stratumAndSegments = handleMapper.getStratumAndSegments(stratumId);
+        boolean isValid = stratumLength != null && totalSegmentLength != null && stratumLength.equals(totalSegmentLength);
+        if (isValid) {
+            Collections.sort(stratumAndSegments, (o1, o2) -> {
+                Double segStart1 = ((Number) o1.get("seg_start")).doubleValue();
+                Double segStart2 = ((Number) o2.get("seg_start")).doubleValue();
+                return Double.compare(segStart1, segStart2);
+            });
+            int sequenceNo = 1;
+            for (Map<String, Object> segment : stratumAndSegments) {
+                segment.put("sequence_no", sequenceNo);
+                handleMapper.updateSequenceNo(stratumId, (Double) segment.get("seg_start"), sequenceNo);
+                sequenceNo++;
+            }
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("isValid", isValid);
+        result.put("stratumInfo", stratumAndSegments);
+        return result;
+    }
+
+
 
     //// 3. 基础数据查询方法
     public List<EngineeringDTO> getEngineeringTeamName() {

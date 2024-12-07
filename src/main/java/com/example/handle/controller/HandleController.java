@@ -477,9 +477,14 @@ public class HandleController {
     @GetMapping("/get/checkStratumIntegrity_trigger")
     public ApiResponse<?> checkStratumIntegrity_trigger(@RequestParam String stratumId) {
         //插入岩芯信息时检查岩柱完整性(触发式)，检查某个stratumId的完整性
-        //TODO: 检查岩柱完整性
-        return ApiResponse.success(Collections.singletonMap("result", "检查成功"));
+        try {
+            Map<String, Object> result = handleService.validateStratumIntegrity(stratumId);
+            return ApiResponse.success(Collections.singletonMap("result", result));
+        } catch (Exception e) {
+            return ApiResponse.fail(e.getMessage());
+        }
     }
+
 
     @ApiOperation("检查岩柱完整性(非触发式)")
     @GetMapping("/get/checkStratumIntegrity_notrigger")
@@ -489,6 +494,18 @@ public class HandleController {
         return ApiResponse.success(Collections.singletonMap("result", "检查成功"));
     }
 
+
+//    @ApiOperation("编录")
+//    @PostMapping("/Catalog")
+//    public ApiResponse<?> Catalog(@RequestBody Map<String, String> receivedData, HttpServletRequest request) {
+//        String u_account = receivedData.get("u_account");
+//        try {
+//            handleService.deleteUserInfoByAccount(u_account);
+//        } catch (DataAccessException e) {
+//            return ApiResponse.fail("删除失败");
+//        }
+//        return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
+//    }
 
     @ApiOperation("删除图片")
     @PostMapping("/change/deleteImage")

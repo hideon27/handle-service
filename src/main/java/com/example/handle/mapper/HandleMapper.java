@@ -94,6 +94,24 @@ public interface HandleMapper {
                          @Param("stratum_add") String stratum_add,
                          @Param("stratum_pro") String stratum_pro) throws DataAccessException;
 
+
+    @Select("SELECT s.stratum_id, s.stratum_name, s.stratum_len, s.stratum_add, cs.image_id, cs.image_path, cs.seg_start, cs.seg_end, cs.seg_len, cs.seg_type, cs.sequence_no FROM stratums s LEFT JOIN core_segments cs ON s.stratum_id = cs.stratum_id WHERE s.stratum_id = #{stratumId}")
+    List<Map<String, Object>> getStratumAndSegments(String stratumId);
+
+    @Select("SELECT SUM(seg_len) FROM core_segments WHERE stratum_id = #{stratumId}")
+    Double getTotalSegmentLength(String stratumId);
+
+    @Select("SELECT stratum_len FROM stratums WHERE stratum_id = #{stratumId}")
+    Double getStratumLength(String stratumId);
+
+    @Update("UPDATE core_segments " +
+            "SET sequence_no = #{sequenceNo} " +
+            "WHERE stratum_id = #{stratumId} AND seg_start = #{segStart}")
+    void updateSequenceNo(@Param("stratumId") String stratumId,
+                         @Param("segStart") Double segStart,
+                         @Param("sequenceNo") int sequenceNo);
+
+
     //// 3. 基础数据查询方法
     @Results({
             @Result(property = "engineeringTeamName", column = "engineering_team_name")
