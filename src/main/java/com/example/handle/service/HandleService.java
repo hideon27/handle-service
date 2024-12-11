@@ -11,6 +11,7 @@ import com.example.handle.dto.resultdata.StratumDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import com.example.handle.dto.resultdata.StratumSegmentDTO;
 
 import java.util.*;
 
@@ -67,24 +68,27 @@ public class HandleService {
     public Map<String, Object> validateStratumIntegrity(String stratumId) {
         Double stratumLength = handleMapper.getStratumLength(stratumId);
         Double totalSegmentLength = handleMapper.getTotalSegmentLength(stratumId);
-        List<Map<String, Object>> stratumAndSegments = handleMapper.getStratumAndSegments(stratumId);
-        boolean isValid = stratumLength != null && totalSegmentLength != null && stratumLength.equals(totalSegmentLength);
+        List<StratumSegmentDTO> segments = handleMapper.getStratumAndSegments(stratumId);
+        
+        boolean isValid = stratumLength != null && totalSegmentLength != null && 
+                         Math.abs(stratumLength - totalSegmentLength) < 0.001;
+        
         if (isValid) {
-            Collections.sort(stratumAndSegments, (o1, o2) -> {
-                Double segStart1 = ((Number) o1.get("seg_start")).doubleValue();
-                Double segStart2 = ((Number) o2.get("seg_start")).doubleValue();
-                return Double.compare(segStart1, segStart2);
-            });
+            segments.sort((a, b) -> Double.compare(a.getSegStart(), b.getSegStart()));
             int sequenceNo = 1;
-            for (Map<String, Object> segment : stratumAndSegments) {
-                segment.put("sequence_no", sequenceNo);
-                handleMapper.updateSequenceNo(stratumId, (Double) segment.get("seg_start"), sequenceNo);
+            for (StratumSegmentDTO segment : segments) {
+                segment.setSequenceNo(sequenceNo);
+                handleMapper.updateSequenceNo(stratumId, segment.getSegStart(), sequenceNo);
                 sequenceNo++;
             }
         }
+        
+        // 更新岩柱完整性
+        handleMapper.updateStratumIntegrity(stratumId, isValid ? "YES" : "NO");
+        
         Map<String, Object> result = new HashMap<>();
         result.put("isValid", isValid);
-        result.put("stratumInfo", stratumAndSegments);
+        result.put("stratumInfo", segments);
         return result;
     }
 

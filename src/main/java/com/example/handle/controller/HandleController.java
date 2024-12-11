@@ -27,6 +27,7 @@ import com.example.handle.dto.ApiResponse;
 import com.example.handle.dto.requestdata.*;
 import com.example.handle.dto.resultdata.*;
 import com.example.handle.model.Stratums;
+import com.example.handle.schedule.StratumIntegritySchedule;
 
 
 @Api(tags = "API接口")
@@ -36,6 +37,9 @@ public class HandleController {
 
     @Autowired
     private HandleService handleService;
+
+    @Autowired
+    private StratumIntegritySchedule stratumIntegritySchedule;
 
     @Value("${file.upload-dir}") // 从配置文件中读取上传目录
     private String uploadDir;
@@ -484,15 +488,14 @@ public class HandleController {
             return ApiResponse.fail(e.getMessage());
         }
     }
-
-
-    @ApiOperation("检查岩柱完整性(非触发式)")
-    @GetMapping("/get/checkStratumIntegrity_notrigger")
-    public ApiResponse<?> checkStratumIntegrity_notrigger() {
-        //一般是全局检查，速度较慢，可以设置定时任务，防止事务导致触发式失效
-        //TODO: 检查岩柱完整性
-        return ApiResponse.success(Collections.singletonMap("result", "检查成功"));
+    
+    @ApiOperation("手动触发岩柱完整性检查")
+    @GetMapping("/checkStratumIntegrity/manual")
+    public ApiResponse<?> manualCheckStratumIntegrity() {
+        stratumIntegritySchedule.checkStratumIntegrity();
+        return ApiResponse.success(Collections.singletonMap("result", "手动检查完成"));
     }
+    
 
 
 //    @ApiOperation("编录")

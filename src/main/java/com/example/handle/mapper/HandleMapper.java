@@ -12,7 +12,7 @@ import com.example.handle.model.Administrators;
 import com.example.handle.model.Stratums;
 import org.apache.ibatis.annotations.*;
 import org.springframework.dao.DataAccessException;
-
+import com.example.handle.dto.resultdata.StratumSegmentDTO;
 import java.util.List;
 import java.util.Map;
 
@@ -95,9 +95,28 @@ public interface HandleMapper {
                          @Param("stratum_pro") String stratum_pro) throws DataAccessException;
 
 
-    @Select("SELECT s.stratum_id, s.stratum_name, s.stratum_len, s.stratum_add, cs.image_id, cs.image_path, cs.seg_start, cs.seg_end, cs.seg_len, cs.seg_type, cs.sequence_no FROM stratums s LEFT JOIN core_segments cs ON s.stratum_id = cs.stratum_id WHERE s.stratum_id = #{stratumId}")
-    List<Map<String, Object>> getStratumAndSegments(String stratumId);
+    @Results({
+        @Result(property = "stratumId", column = "stratum_id"),
+        @Result(property = "stratumName", column = "stratum_name"),
+        @Result(property = "stratumLen", column = "stratum_len"),
+        @Result(property = "stratumAdd", column = "stratum_add"),
+        @Result(property = "imageId", column = "image_id"),
+        @Result(property = "imageName", column = "image_name"),
+        @Result(property = "imagePath", column = "image_path"),
+        @Result(property = "segStart", column = "seg_start"),
+        @Result(property = "segEnd", column = "seg_end"),
+        @Result(property = "segLen", column = "seg_len"),
+        @Result(property = "segType", column = "seg_type"),
+        @Result(property = "sequenceNo", column = "sequence_no")
+    })
+    @Select("SELECT s.stratum_id, s.stratum_name, s.stratum_len, s.stratum_add, " +
+            "cs.image_id, cs.image_name, cs.image_path, cs.seg_start, cs.seg_end, cs.seg_len, cs.seg_type, cs.sequence_no " +
+            "FROM stratums s " +
+            "LEFT JOIN core_segments cs ON s.stratum_id = cs.stratum_id " +
+            "WHERE s.stratum_id = #{stratumId}")
+    List<StratumSegmentDTO> getStratumAndSegments(String stratumId);
 
+    
     @Select("SELECT SUM(seg_len) FROM core_segments WHERE stratum_id = #{stratumId}")
     Double getTotalSegmentLength(String stratumId);
 
@@ -288,5 +307,21 @@ public interface HandleMapper {
 
     @Delete("delete from stratums where stratum_id = #{stratum_id}")
     void deleteStratumInfoById(@Param("stratum_id") String stratum_id) throws DataAccessException;
+
+
+    //// 5. 岩柱完整性检查相关方法
+    @Results({
+            @Result(property = "stratumId", column = "stratum_id"),
+            @Result(property = "stratumName", column = "stratum_name"),
+            @Result(property = "stratumLen", column = "stratum_len"),
+            @Result(property = "stratumAdd", column = "stratum_add"),
+            @Result(property = "stratumPro", column = "stratum_pro"),
+            @Result(property = "integrity", column = "integrity")
+    })
+    @Select("SELECT * FROM stratums")
+    List<Stratums> getAllStratums();
+
+    @Update("UPDATE stratums SET integrity = #{integrity} WHERE stratum_id = #{stratumId}")
+    void updateStratumIntegrity(@Param("stratumId") String stratumId, @Param("integrity") String integrity);
 }
 
