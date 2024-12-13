@@ -1,0 +1,26 @@
+version: '3'
+services:
+  handle-service:
+    build: .
+    container_name: handle-service
+    ports:
+      - "3000:3000"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://your-mysql-host:3306/handle?characterEncoding=UTF-8
+      - SPRING_DATASOURCE_USERNAME=your-username
+      - SPRING_DATASOURCE_PASSWORD=your-password
+      - FILE_UPLOAD_DIR=/app/upload
+      - FILE_STRATUM_INTEGRITY_RESULT_DIR=/app/stratum-integrity
+      - FILE_CORE_INTEGRITY_RESULT_DIR=/app/core-integrity
+      - FILE_VALID_CORE_DIR=/app/valid-core
+    volumes:
+      - ./upload:/app/upload
+      - ./stratum-integrity:/app/stratum-integrity
+      - ./core-integrity:/app/core-integrity
+      - ./valid-core:/app/valid-core
+    restart: always
+
+networks:
+  handle-network:
+    driver: bridge 

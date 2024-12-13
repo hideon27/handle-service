@@ -24,13 +24,13 @@ public class StratumIntegritySchedule {
     @Autowired
     private HandleMapper handleMapper;
     
-    @Value("${file.stratum-integrity-result-dir}")
+    @Value("${file_linux.stratum-integrity-result-dir}")
     private String stratumResultDir;
     
-    @Value("${file.core-integrity-result-dir}")
+    @Value("${file_linux.core-integrity-result-dir}")
     private String coreResultDir;
     
-    @Value("${file.valid-core-dir}")
+    @Value("${file_linux.valid-core-dir}")
     private String validCoreDir;
 
     @Scheduled(cron = "0 0 2 * * ?")

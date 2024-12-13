@@ -44,3 +44,16 @@ logs/
 
 ### 其他 ###
 .DS_Store 
+
+# Docker配置文件
+docker-compose.yml
+.env
+
+# 不要忽略示例文件
+!docker-compose.yml.example
+
+# Docker相关目录
+upload/
+stratum-integrity/
+core-integrity/
+valid-core/

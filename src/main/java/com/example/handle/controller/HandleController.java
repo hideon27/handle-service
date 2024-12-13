@@ -41,13 +41,14 @@ public class HandleController {
     @Autowired
     private StratumIntegritySchedule stratumIntegritySchedule;
 
-    @Value("${file.upload-dir}") // 从配置文件中读取上传目录
+    @Value("${file_linux.upload-dir}") // 从配置文件中读取上传目录
     private String uploadDir;
 
     private final WebClient webClient;
 
     public HandleController(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("http://127.0.0.1:5000").build();  //本地
+        //this.webClient = webClientBuilder.baseUrl("http://127.0.0.1:5000").build();  //本地
+        this.webClient = webClientBuilder.baseUrl("https://4368-240e-478-5620-2aca-d05-266-a190-f37.ngrok-free.app").build();  //代理
     }
 
     // 1. 用户认证相关接口
@@ -133,9 +134,9 @@ public class HandleController {
     }
 
     // 2. 图片上传和处理相关接口
-    @ApiOperation("上传图片")
-    @PostMapping("/uploadimage")
-    public ApiResponse<?> uploadImage(@RequestParam("picture") MultipartFile picture) {
+    @ApiOperation("上传图片(路径传递)")
+    @PostMapping("/uploadimage_path")
+    public ApiResponse<?> uploadImage_path(@RequestParam("picture") MultipartFile picture) {
         if (picture.isEmpty()) {
             return ApiResponse.fail("未上传文件");
         }
@@ -186,6 +187,53 @@ public class HandleController {
             return ApiResponse.fail("文件保存失败: " + e.getMessage());
         } catch (WebClientResponseException e) {
             return ApiResponse.fail(e.getResponseBodyAsString());
+        }
+    }
+
+
+    @ApiOperation("上传图片(图片传递)")
+    @PostMapping("/uploadimage")
+    public ApiResponse<?> uploadImage(@RequestParam("picture") MultipartFile picture) {
+        if (picture.isEmpty()) {
+            return ApiResponse.fail("未上传文件");
+        }
+        
+        try {
+            // 保存上传的文件作为备份
+            String fileName = picture.getOriginalFilename();
+            String filePath = uploadDir + "/" + fileName;
+            File file = new File(filePath);
+            
+            // 使用Files API来保存文件，这样更安全
+            Files.copy(picture.getInputStream(), file.toPath(), 
+                      java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            // 获取Base64编码
+            String base64Image = Base64Utils.encodeToString(picture.getBytes());
+            
+            // 构建请求数据
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("image_name", fileName);
+            requestBody.put("image_data", base64Image);
+            
+            // 发送请求到服务器
+            Mono<Map> responseMono = webClient.post()
+                    .uri("/predict")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(Map.class);
+                
+            Map<String, Object> response = responseMono.block();
+            
+            if (response != null) {
+                return ApiResponse.success(response);
+            } else {
+                return ApiResponse.fail("服务器无响应");
+            }
+            
+        } catch (IOException e) {
+            e.printStackTrace(); // 添加详细的错误日志
+            return ApiResponse.fail("文件处理失败: " + e.getMessage());
         }
     }
 
@@ -493,7 +541,7 @@ public class HandleController {
     @GetMapping("/checkStratumIntegrity/manual")
     public ApiResponse<?> manualCheckStratumIntegrity() {
         stratumIntegritySchedule.checkStratumIntegrity();
-        return ApiResponse.success(Collections.singletonMap("result", "手动检查完成"));
+        return ApiResponse.success(Collections.singletonMap("result", "���动检查完成"));
     }
     
 
