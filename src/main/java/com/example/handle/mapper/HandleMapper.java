@@ -131,6 +131,7 @@ public interface HandleMapper {
                          @Param("sequenceNo") int sequenceNo);
 
 
+
     //// 3. 基础数据查询方法
     @Results({
             @Result(property = "engineeringTeamName", column = "engineering_team_name")
@@ -323,5 +324,8 @@ public interface HandleMapper {
 
     @Update("UPDATE stratums SET integrity = #{integrity} WHERE stratum_id = #{stratumId}")
     void updateStratumIntegrity(@Param("stratumId") String stratumId, @Param("integrity") String integrity);
+
+    @Select("SELECT stratum_id FROM stratums WHERE integrity = 'NO'")
+    List<Map<String, Object>> getAllStrataWithIssues();
 }
 
