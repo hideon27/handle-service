@@ -7,4 +7,4 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class ScheduleConfig {
     // 启用定时任务
-} 
+}

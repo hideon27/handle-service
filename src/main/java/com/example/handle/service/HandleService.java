@@ -13,7 +13,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import com.example.handle.dto.resultdata.StratumSegmentDTO;
 
+import javax.transaction.Transactional;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class HandleService {
@@ -82,10 +84,10 @@ public class HandleService {
                 sequenceNo++;
             }
         }
-        
+
         // 更新岩柱完整性
         handleMapper.updateStratumIntegrity(stratumId, isValid ? "YES" : "NO");
-        
+
         Map<String, Object> result = new HashMap<>();
         result.put("isValid", isValid);
         result.put("stratumInfo", segments);
@@ -165,5 +167,35 @@ public class HandleService {
 
     public void deleteStratumInfoById(String stratum_id) throws DataAccessException {
         handleMapper.deleteStratumInfoById(stratum_id);
+    }
+    @Transactional
+    public List<Map<String, Object>> checkStratumIntegrityGlobally() {
+        List<Map<String, Object>> integrityIssues = new ArrayList<>();
+        // 1. 查询所有完整性为"NO"的岩柱
+        List<Map<String, Object>> allStrata = handleMapper.getAllStrataWithIssues();
+        // 2. 遍历所有岩柱，检查其完整性
+        for (Map<String, Object> stratum : allStrata) {
+            String stratumId = (String) stratum.get("stratum_id");
+            //System.out.println(stratumId);
+            // 3. 获取每个岩柱的长度和段的总长度
+            Double stratumLength = handleMapper.getStratumLength(stratumId);
+            Double totalSegmentLength = handleMapper.getTotalSegmentLength(stratumId);
+            List<StratumSegmentDTO> segments = handleMapper.getStratumAndSegments(stratumId);
+
+            boolean isValid = stratumLength != null && totalSegmentLength != null &&
+                    Math.abs(stratumLength - totalSegmentLength) < 0.001;
+            if (isValid) {
+                segments.sort((a, b) -> Double.compare(a.getSegStart(), b.getSegStart()));
+                int sequenceNo = 1;
+                for (StratumSegmentDTO segment : segments) {
+                    segment.setSequenceNo(sequenceNo);
+                    handleMapper.updateSequenceNo(stratumId, segment.getSegStart(), sequenceNo);
+                    sequenceNo++;
+                }
+            }
+            // 更新岩柱完整性
+            handleMapper.updateStratumIntegrity(stratumId, isValid ? "YES" : "NO");
+        }
+        return integrityIssues;
     }
 }

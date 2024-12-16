@@ -41,7 +41,7 @@ public class HandleController {
     @Autowired
     private StratumIntegritySchedule stratumIntegritySchedule;
 
-    @Value("${file_linux.upload-dir}") // 从配置文件中读取上传目录
+    @Value("${file_windows.upload-dir}") // 从配置文件中读取上传目录
     private String uploadDir;
 
     private final WebClient webClient;
@@ -604,5 +604,26 @@ public class HandleController {
         }
         return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
     }
+    @ApiOperation("检查岩柱完整性(非触发式)")
+    @GetMapping("/get/checkStratumIntegrity_notrigger")
+    public ApiResponse<?> checkStratumIntegrity_notrigger() {
+        // 一般是全局检查，速度较慢，可以设置定时任务，防止事务导致触发式失效
+        try {
+            // 调用服务层进行全局检查
+            List<Map<String, Object>> result = handleService.checkStratumIntegrityGlobally();
+
+            // 返回检查结果
+            if (result != null && !result.isEmpty()) {
+                return ApiResponse.success(Collections.singletonMap("result", result));
+            } else {
+                return ApiResponse.success(Collections.singletonMap("result", "所有岩柱完整"));
+            }
+        } catch (Exception e) {
+            // 错误处理，返回失败信息
+            return ApiResponse.fail("检查失败：" + e.getMessage());
+        }
+    }
     
 }
+
+
