@@ -7,6 +7,9 @@ import lombok.Data;
 @Data
 @ApiModel(value = "图像地层组合信息", description = "返回图像和对应地层的组合信息")
 public class ImageAndStratumDTO {
+    @ApiModelProperty(value = "图像ID", example = "1")
+    private String imageId;
+
     @ApiModelProperty(value = "图像名称", example = "海淀区岩心样本1")
     private String imageName;
 

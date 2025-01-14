@@ -102,12 +102,26 @@ CREATE TABLE `core_segments` (
   CONSTRAINT `core_seg_len_check` CHECK ((`seg_len` > 0))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='岩心段信息表';
 
+CREATE TABLE `user_operation_logs` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '自增主键',
+  `user_id` bigint NOT NULL COMMENT '操作人ID(关联users表id)',
+  `operation_type` varchar(50) NOT NULL COMMENT '操作类型',
+  `operation_content` varchar(500) NOT NULL COMMENT '操作内容描述',
+  `operation_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+  `operation_result` varchar(10) NOT NULL COMMENT '操作结果(SUCCESS/FAIL)',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_log_user` FOREIGN KEY (`user_id`) 
+    REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户操作日志表';
+
 -- =============================================
 -- 索引定义
 -- =============================================
 CREATE INDEX idx_user_account ON users(u_account);
 CREATE INDEX idx_stratum_name ON stratums(stratum_name);
 CREATE INDEX idx_core_upload ON core_segments(upload_time);
+CREATE INDEX idx_operation_time ON user_operation_logs(operation_time);
+CREATE INDEX idx_user_id ON user_operation_logs(user_id);
 
 -- =============================================
 -- 视图定义
@@ -154,4 +168,8 @@ INSERT INTO project (p_id, p_name, p_principal, p_team, p_description) VALUES
 INSERT INTO core_segments (image_id, image_name, image_path, uploader_num, seg_start, seg_end, seg_len, seg_type, sequence_no, stratum_id, stratum_len) VALUES
 ('IMG2023001', '海淀区岩心样本1', '/images/core/2023/001.jpg', 'U2023001', 10.500, 20.500, 10.000, '砂岩', 1, 'S2023001', 100.500),
 ('IMG2023002', '朝阳区岩心样本1', '/images/core/2023/002.jpg', 'U2023002', 15.750, 25.750, 10.000, '页岩', 1, 'S2023002', 150.750);
+
+INSERT INTO user_operation_logs (user_id, operation_type, operation_content, operation_result) VALUES
+('1', '上传岩心图像', '上传图像IMG2023001', '200'),
+('2', '修改项目信息', '更新项目P2023002描述', '200');
 

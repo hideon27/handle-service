@@ -6,10 +6,12 @@ import java.util.Map;
 public class ImageSqlProvider {
     public String getImageInfoByDynamicParams(Map<String, Object> params) {
         return new SQL() {{
-            SELECT("i.image_name, s.stratum_name, i.seg_start, i.seg_end");
+            SELECT("i.image_id,i.image_name, s.stratum_name, i.seg_start, i.seg_end");
             FROM("core_segments i");
             LEFT_OUTER_JOIN("stratums s ON i.stratum_id = s.stratum_id");
-            
+            if (params.get("image_id") != null) {
+                WHERE("i.image_id LIKE CONCAT('%', #{image_id}, '%')");
+            }
             if (params.get("image_name") != null) {
                 WHERE("i.image_name LIKE CONCAT('%', #{image_name}, '%')");
             }

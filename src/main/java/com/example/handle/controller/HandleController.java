@@ -16,7 +16,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import javax.servlet.http.HttpServletRequest;
-//import java.beans.PropertyEditorSupport;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -47,8 +46,8 @@ public class HandleController {
     private final WebClient webClient;
 
     public HandleController(WebClient.Builder webClientBuilder) {
-        //this.webClient = webClientBuilder.baseUrl("http://127.0.0.1:5000").build();  //本地
-        this.webClient = webClientBuilder.baseUrl("https://4368-240e-478-5620-2aca-d05-266-a190-f37.ngrok-free.app").build();  //代理
+        this.webClient = webClientBuilder.baseUrl("http://127.0.0.1:5000").build();  //本地
+        //this.webClient = webClientBuilder.baseUrl("http://1nd0165zd5753.vicp.fun").build();  //代理
     }
 
     // 1. 用户认证相关接口
@@ -57,15 +56,18 @@ public class HandleController {
     public ApiResponse<?> loginUser(@RequestBody UserLoginDTO loginDTO) {
         String username = loginDTO.getUsername();
         String password = loginDTO.getPassword();
-        int result = handleService.getResultByNamePassword(username, password);
-        if (result == 1) {
+        Long userId = handleService.getResultByNamePassword(username, password);
+        if (userId != null) {
             // 更新最后登录时间
             handleService.updateLastLoginTime(username);
             // 生成token
             Map<String, String> payload = new HashMap<>();
             payload.put("userId", username);
             String token = JWTUtils.getToken(payload);
-            return ApiResponse.success(Collections.singletonMap("token", token));
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("userId", userId);  // 返回用户ID给前端
+            return ApiResponse.success(response);
         } else {
             return ApiResponse.fail("账号出错");
         }
@@ -93,15 +95,17 @@ public class HandleController {
     @ApiOperation("注册用户")
     @PostMapping("/post/register")
     public ApiResponse<?> register(@RequestBody UserRegisterDTO registerDTO) {
+        // 获取必填字段
         String username = registerDTO.getUsername();
         String password = registerDTO.getPassword();
-        String name = registerDTO.getName();
-        String sex = registerDTO.getSex();
-        String number = registerDTO.getNumber();
-        String id = registerDTO.getId();
-        String email = registerDTO.getEmail();
-        String tel = registerDTO.getTel();
-        String en = registerDTO.getEn();
+        // 设置可选字段的默认值
+        String name = registerDTO.getName() != null ? registerDTO.getName() : "hide";
+        String sex = registerDTO.getSex() != null ? registerDTO.getSex() : "男";
+        String email = registerDTO.getEmail() != null ? registerDTO.getEmail() : "hide@hide.com";
+        String tel = registerDTO.getTel() != null ? registerDTO.getTel() : "123";
+        String en = registerDTO.getEn() != null ? registerDTO.getEn() : "第一工程队";
+        String number = registerDTO.getNumber() != null ? registerDTO.getNumber() : "U1001";
+        String id = registerDTO.getId() != null ? registerDTO.getId() : "111111111111111111";
         int result = 0;
         try {
             result = handleService.insertUser(username, number, password, name, sex, id, email, tel, en);
@@ -193,14 +197,14 @@ public class HandleController {
 
     @ApiOperation("上传图片(图片传递)")
     @PostMapping("/uploadimage")
-    public ApiResponse<?> uploadImage(@RequestParam("picture") MultipartFile picture) {
+    public ApiResponse<?> uploadImage(@RequestParam("picture") MultipartFile picture,
+                                     @RequestParam("image_id") String imageId) {
         if (picture.isEmpty()) {
             return ApiResponse.fail("未上传文件");
         }
-        
         try {
             // 保存上传的文件作为备份
-            String fileName = picture.getOriginalFilename();
+            String fileName = imageId + ".jpg";
             String filePath = uploadDir + "/" + fileName;
             File file = new File(filePath);
             
@@ -237,14 +241,14 @@ public class HandleController {
         }
     }
 
-    @GetMapping("/images/{picture_name}")
-    public String getImageAsBase64(@PathVariable("picture_name") String picture_name) throws IOException {
+    @GetMapping("/images/{image_id}")
+    public String getImageAsBase64(@PathVariable("image_id") String image_id) throws IOException {
         // 读取图片文件
-        File file = new File(uploadDir+"/"+picture_name);
+        File file = new File(uploadDir+"/"+image_id+".jpg");
         byte[] imageBytes = Files.readAllBytes(file.toPath());
-
         return Base64Utils.encodeToString(imageBytes);
     }
+
 
     @ApiOperation("上传图片")
     @PostMapping("/post/upload")
@@ -261,8 +265,9 @@ public class HandleController {
         }
         if (!Objects.equals(uploader_num, "")) {
             try {
-                handleService.insertImageInfo(receivedData.get("IMAGE_ID"),receivedData.get("IMAGE_NAME"),
-                        uploadDir+"/"+receivedData.get("IMAGE_NAME")+".jpg", 
+                handleService.insertImageInfo(receivedData.get("IMAGE_ID"),
+                        receivedData.get("IMAGE_NAME"),
+                        uploadDir+"/"+receivedData.get("IMAGE_ID")+".jpg", 
                         uploader_num,
                         receivedData.get("STRATUM_ID"),
                         Double.parseDouble(receivedData.get("STRATUM_LEN")),
@@ -296,13 +301,18 @@ public class HandleController {
     }
 
     @ApiOperation("获得图片信息")
-    @GetMapping("/change/showImageInfo")
-    public ApiResponse<?> showImageInfo(@RequestParam String imageName) {
+    @GetMapping("/change/showImageInfo") 
+    public ApiResponse<?> showImageInfo(@RequestParam(required = false) String imageId,
+                                      @RequestParam(required = false) String imageName) {
+        // 检查参数,至少需要一个参数
+        if (imageId == null && imageName == null) {
+            return ApiResponse.fail("imageId和imageName至少需要提供一个");
+        }
         List<CoreSegments> result;
         try {
-            result = handleService.getImageInfoByName(imageName);
+            result = handleService.getImageInfoByIdAndName(imageId, imageName);
         } catch (DataAccessException e) {
-            return ApiResponse.fail("账号出错");
+            return ApiResponse.fail("查询失败");
         }
         return ApiResponse.success(Collections.singletonMap("result", result));
     }
@@ -319,10 +329,11 @@ public class HandleController {
         return ApiResponse.success(Collections.singletonMap("result", result));
     }
 
-    @ApiOperation("根据输入参数获得图片信息(segType和imageName都为模糊查询)")
+    @ApiOperation("根据输入参数获得图片信息(segType和imageName、imageId都为模糊查询)")
     @PostMapping("/get/getImageInfo")
     public ApiResponse<?> getImageInfo(@RequestBody CoreSegmentQueryDTO queryDTO) {
         Map<String, Object> params = new HashMap<>();
+        params.put("image_id", queryDTO.getImageId());
         params.put("image_name", queryDTO.getImageName());
         params.put("seg_start", queryDTO.getSegStart());
         params.put("seg_end", queryDTO.getSegEnd());
@@ -337,7 +348,8 @@ public class HandleController {
 
     @ApiOperation("根据输入参数获得图片信息")
     @GetMapping("/get/getImageInfo")
-    public ApiResponse<?> getImageInfo_get(@RequestParam(required = false) String imageName,
+    public ApiResponse<?> getImageInfo_get(@RequestParam(required = false) String imageId,
+                                                   @RequestParam(required = false) String imageName,
                                                    @RequestParam(required = false) String segStart,
                                                    @RequestParam(required = false) String segEnd,
                                                    @RequestParam(required = false) String segLen,
@@ -345,6 +357,7 @@ public class HandleController {
                                                    @RequestParam(required = false) String stratumId,
                                                    @RequestParam(required = false) String uploaderNum) {
         Map<String, Object> params = new HashMap<>();
+        params.put("image_id", imageId);
         params.put("image_name", imageName);
         params.put("seg_start", segStart);
         params.put("seg_end", segEnd);
@@ -375,7 +388,8 @@ public class HandleController {
                                                @RequestParam(required = false) String num,
                                                @RequestParam(required = false) String name,
                                                @RequestParam(required = false) String sex,
-                                               @RequestParam(required = false) String tel) {
+                                               @RequestParam(required = false) String tel,
+                                               @RequestParam(required = false) String etName) {
         Map<String, Object> params = new HashMap<>();
         List<Users> result;
         params.put("u_account", account);
@@ -383,6 +397,7 @@ public class HandleController {
         params.put("u_name", name);
         params.put("u_sex", sex);
         params.put("u_tel", tel);
+        params.put("u_et_name", etName);
         System.out.println(params);
         try {
             result = handleService.getUserInfoByDynamicParams(params);
@@ -424,13 +439,9 @@ public class HandleController {
     @ApiOperation("更新图片信息获取token")
     @GetMapping("/change/updateImageInfo")
     public ApiResponse<?> updateImageInfo(@RequestParam String uploadNum, HttpServletRequest request) {
-        // String token = request.getHeader("token");
         String token = request.getHeader("Authorization").substring("Bearer ".length());
-
-        System.out.println(token);
         DecodedJWT verify = JWTUtils.verify(token);
         String account = verify.getClaim("userId").asString();
-
         List<Users> result;
         try {
             result = handleService.getUserInfoByAccNum(account, uploadNum);
@@ -441,21 +452,18 @@ public class HandleController {
     }
 
     @ApiOperation("更新图片信息")
-    @PostMapping("/change/updateSubmit")
+    @PostMapping("/change/updateSubmit") 
     public ApiResponse<?> updateSubmit(@RequestBody Map<String, String> receivedData) {
-        String imageName = receivedData.get("imageName");
-        String stratumId = receivedData.get("stratumId");
-        double segStart = Double.parseDouble(receivedData.get("segStart"));
-        double segEnd = Double.parseDouble(receivedData.get("segEnd"));
-        double segLen = Double.parseDouble(receivedData.get("segLen"));
-        String segType = receivedData.get("segType");
-        String oldImageName = receivedData.get("oldImageName");
+        String imageId = receivedData.get("imageId");
+        // 设置其他参数的默认值
+        String imageName = receivedData.getOrDefault("imageName", "");
+        String stratumId = receivedData.getOrDefault("stratumId", "");
+        double segStart = Double.parseDouble(receivedData.getOrDefault("segStart", "-1"));
+        double segEnd = Double.parseDouble(receivedData.getOrDefault("segEnd", "-1")); 
+        double segLen = Double.parseDouble(receivedData.getOrDefault("segLen", "-1"));
+        String segType = receivedData.getOrDefault("segType", "");
         try {
-            handleService.updateImageInfoByName(imageName, stratumId, segStart, segEnd, segLen, segType, oldImageName);
-            // // 重命名文件
-            // File oldFile = new File(uploadDir + "/" + oldImageName + ".jpg");
-            // File newFile = new File(uploadDir + "/" + imageName + ".jpg");
-            // oldFile.renameTo(newFile);
+            handleService.updateImageInfoByName(imageName, stratumId, segStart, segEnd, segLen, segType, imageId);
         } catch (DataAccessException e) {
             return ApiResponse.fail("更新失败");
         }
@@ -463,21 +471,23 @@ public class HandleController {
     }
 
     @ApiOperation("更新用户信息")
-    @PostMapping("/change/updateSubmitUser")
+    @PostMapping("/change/updateSubmitUser") 
     public ApiResponse<?> updateSubmitUser(@RequestBody Map<String, String> receivedData) {
-        //Map<String, Object> responseBody = new HashMap<>();
-        String u_oldAccount = receivedData.get("uOldAccount");
-        String u_account = receivedData.get("uAccount");
-        String u_num = receivedData.get("uNum");
-        String u_password = receivedData.get("uPassword");
-        String u_name = receivedData.get("uName");
-        String u_sex = receivedData.get("uSex");
-        String u_id = receivedData.get("uId");
-        String u_email = receivedData.get("uEmail");
-        String u_tel = receivedData.get("uTel");
-        String u_et_name = receivedData.get("uEtName");
+        String id = receivedData.get("id");
+        if (id == null) {
+            return ApiResponse.fail("id不能为空");
+        }
+        String u_account = receivedData.getOrDefault("uAccount", "");
+        String u_num = receivedData.getOrDefault("uNum", "");
+        String u_password = receivedData.getOrDefault("uPassword", "");
+        String u_name = receivedData.getOrDefault("uName", "");
+        String u_sex = receivedData.getOrDefault("uSex", "");
+        String u_id = receivedData.getOrDefault("uId", "");
+        String u_email = receivedData.getOrDefault("uEmail", "");
+        String u_tel = receivedData.getOrDefault("uTel", "");
+        String u_et_name = receivedData.getOrDefault("uEtName", "");
         try {
-            handleService.updateUserInfoByAccount(u_oldAccount, u_account, u_num, u_password, u_name, u_sex, u_id, u_email, u_tel, u_et_name);
+            handleService.updateUserInfoByAccount(id, u_account, u_num, u_password, u_name, u_sex, u_id, u_email, u_tel, u_et_name);
         } catch (DataAccessException e) {
             System.out.println(e.getMessage());
             return ApiResponse.fail("更新失败");
@@ -489,16 +499,19 @@ public class HandleController {
     @ApiOperation("更新地层信息")
     @PostMapping("/change/updateSubmitStratum")
     public ApiResponse<?> updateSubmitStratum(@RequestBody Map<String, String> receivedData) {
-        String oldStratumId = receivedData.get("oldStratumId");
         String stratumId = receivedData.get("stratumId");
-        String stratumName = receivedData.get("stratumName");
-        double stratumLen = Double.parseDouble(receivedData.get("stratumLen"));
-        String stratumAdd = receivedData.get("stratumAdd");
-        String stratumPro = receivedData.get("stratumPro");
-        String stratumIntegrity = receivedData.get("stratumIntegrity");
+        if (stratumId == null) {
+            return ApiResponse.fail("stratumId不能为空");
+        }
+        // 设置其他参数的默认值
+        String stratumName = receivedData.getOrDefault("stratumName", "");
+        double stratumLen = Double.parseDouble(receivedData.getOrDefault("stratumLen", "-1"));
+        String stratumAdd = receivedData.getOrDefault("stratumAdd", "");
+        String stratumPro = receivedData.getOrDefault("stratumPro", "");
+        String stratumIntegrity = receivedData.getOrDefault("stratumIntegrity", "");
 
         try {
-            handleService.updateStratumInfoById(oldStratumId, stratumId, stratumName, stratumLen, stratumAdd, stratumPro, stratumIntegrity);
+            handleService.updateStratumInfoById(stratumId, stratumName, stratumLen, stratumAdd, stratumPro, stratumIntegrity);
         } catch (DataAccessException e) {
             return ApiResponse.fail("更新失败");
         }
@@ -511,8 +524,9 @@ public class HandleController {
         String stratumId = receivedData.get("stratumId");
         String stratumName = receivedData.get("stratumName");
         double stratumLen = Double.parseDouble(receivedData.get("stratumLen"));
-        String stratumAdd = receivedData.get("stratumAdd");
-        String stratumPro = receivedData.get("stratumPro");
+        // 设置可选字段的默认值
+        String stratumAdd = receivedData.getOrDefault("stratumAdd", "广州");
+        String stratumPro = receivedData.getOrDefault("stratumPro", "P2023001");
         try {
             int result = handleService.insertStratumInfo(stratumId, stratumName, stratumLen, stratumAdd, stratumPro);
             if (result == 1) {
@@ -541,27 +555,14 @@ public class HandleController {
     @GetMapping("/checkStratumIntegrity/manual")
     public ApiResponse<?> manualCheckStratumIntegrity() {
         stratumIntegritySchedule.checkStratumIntegrity();
-        return ApiResponse.success(Collections.singletonMap("result", "���动检查完成"));
+        return ApiResponse.success(Collections.singletonMap("result", "手动检查完成"));
     }
     
-
-
-//    @ApiOperation("编录")
-//    @PostMapping("/Catalog")
-//    public ApiResponse<?> Catalog(@RequestBody Map<String, String> receivedData, HttpServletRequest request) {
-//        String u_account = receivedData.get("u_account");
-//        try {
-//            handleService.deleteUserInfoByAccount(u_account);
-//        } catch (DataAccessException e) {
-//            return ApiResponse.fail("删除失败");
-//        }
-//        return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
-//    }
-
+    
     @ApiOperation("删除图片")
     @PostMapping("/change/deleteImage")
     public ApiResponse<?> deleteImage(@RequestBody Map<String, String> receivedData, HttpServletRequest request) {
-        String imageName = receivedData.get("imageName");
+        String imageId = receivedData.get("imageId");
         String uploadNum = receivedData.get("uploadNum");
         String token = request.getHeader("Authorization").substring("Bearer ".length());
         DecodedJWT verify = JWTUtils.verify(token);
@@ -573,20 +574,20 @@ public class HandleController {
             return ApiResponse.fail("查询数据库失败");
         }
         try {
-            handleService.deleteImageInfoByImageName(imageName);
+            handleService.deleteImageInfoByImageId(imageId);
         } catch (DataAccessException e) {
             return ApiResponse.fail("删除失败");
         }
-        new File(uploadDir+"/"+imageName+".jpg").delete();
+        new File(uploadDir+"/"+imageId+".jpg").delete();
         return ApiResponse.success(Collections.singletonMap("result", "删除成功"));
     }
 
     @ApiOperation("删除用户")
     @PostMapping("/change/deleteUser")
     public ApiResponse<?> deleteUser(@RequestBody Map<String, String> receivedData, HttpServletRequest request) {
-        String u_account = receivedData.get("u_account");
+        String id = receivedData.get("id");
         try {
-            handleService.deleteUserInfoByAccount(u_account);
+            handleService.deleteUserInfoById(id);
         } catch (DataAccessException e) {
             return ApiResponse.fail("删除失败");
         }
@@ -624,6 +625,34 @@ public class HandleController {
         }
     }
     
+    @ApiOperation(value = "记录用户操作日志", notes = "记录用户的操作行为，包括操作类型、内容和结果")
+    @PostMapping("/log/operation")
+    public ApiResponse<?> logOperation(@RequestBody OperationLogDTO logDTO) {
+        try {
+            handleService.logOperation(
+                logDTO.getUserId(),
+                logDTO.getOperationType(),
+                logDTO.getOperationContent(),
+                logDTO.getOperationResult()
+            );
+            return ApiResponse.success(Collections.singletonMap("result", "日志记录成功"));
+        } catch (Exception e) {
+            return ApiResponse.fail("日志记录失败: " + e.getMessage());
+        }
+    }
+
+    @ApiOperation(value = "查询用户操作日志", notes = "查询用户操作日志，userId为null时查询所有用户的日志，默认显示最近5条")
+    @GetMapping("/log/query")
+    public ApiResponse<?> queryOperationLogs(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false, defaultValue = "5") Integer limit) {
+        try {
+            List<OperationLogResultDTO> logs = handleService.getOperationLogs(userId, limit);
+            return ApiResponse.success(Collections.singletonMap("result", logs));
+        } catch (Exception e) {
+            return ApiResponse.fail("查询日志失败: " + e.getMessage());
+        }
+    }
 }
 
 

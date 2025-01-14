@@ -23,9 +23,10 @@ public class UserSqlProvider {
             if (params.get("u_tel") != null) {
                 WHERE("u_tel LIKE CONCAT('%', #{u_tel}, '%')");
             }
-            // 根据需要添加更多条件
+            if (params.get("u_et_name") != null) {
+                WHERE("u_et_name LIKE CONCAT('%', #{u_et_name}, '%')");
+            }
         }}.toString();
-        //System.out.println("Generated SQL: " + sql);
         return sql; 
     }
 }

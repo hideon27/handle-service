@@ -3,7 +3,7 @@ package com.example.handle.service;
 import com.example.handle.mapper.HandleMapper;
 import com.example.handle.model.CoreSegments;
 import com.example.handle.model.Users;
-//import com.example.handle.model.Administrators;
+import com.example.handle.dto.resultdata.OperationLogResultDTO;
 import com.example.handle.model.Stratums;
 import com.example.handle.dto.resultdata.EngineeringDTO;
 import com.example.handle.dto.resultdata.ImageAndStratumDTO;
@@ -15,7 +15,6 @@ import com.example.handle.dto.resultdata.StratumSegmentDTO;
 
 import javax.transaction.Transactional;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class HandleService {
@@ -23,7 +22,7 @@ public class HandleService {
     private HandleMapper handleMapper;
 
     //// 1. 用户认证相关方法
-    public int getResultByNamePassword(String username, String password) {
+    public Long getResultByNamePassword(String username, String password) {
         return handleMapper.getResultByNamePassword(username, password);
     }
 
@@ -94,8 +93,6 @@ public class HandleService {
         return result;
     }
 
-
-
     //// 3. 基础数据查询方法
     public List<EngineeringDTO> getEngineeringTeamName() {
         return handleMapper.getEngineeringTeamName();
@@ -105,8 +102,8 @@ public class HandleService {
         return handleMapper.getStratumName();
     }
 
-    public List<CoreSegments> getImageInfoByName(String image_name) throws DataAccessException {
-        return handleMapper.getImageInfoByName(image_name);
+    public List<CoreSegments> getImageInfoByIdAndName(String imageId, String imageName) throws DataAccessException {
+        return handleMapper.getImageInfoByIdAndName(imageId, imageName);
     }
 
     public List<ImageAndStratumDTO> getImageInfoByDynamicParams(Map<String, Object> params) {
@@ -136,33 +133,33 @@ public class HandleService {
 
     public void updateImageInfoByName(String imageName, String stratumId,
                                     double segStart, double segEnd, double segLen,
-                                    String segType, String oldImageName) {
+                                    String segType, String imageId) {
         handleMapper.updateImageInfoByName(imageName, stratumId, segStart, segEnd,
-                segLen, segType, oldImageName);
+                segLen, segType, imageId);
     }
 
-    public void updateUserInfoByAccount(String u_oldAccount, String u_account,
+    public void updateUserInfoByAccount(String id, String u_account,
                                       String u_num, String u_password, String u_name,
                                       String u_sex, String u_id, String u_email,
                                       String u_tel, String u_et_name) throws DataAccessException {
-        handleMapper.updateUserInfoByAccount(u_oldAccount, u_account, u_num,
+        handleMapper.updateUserInfoByAccount(id, u_account, u_num,
                 u_password, u_name, u_sex, u_id, u_email, u_tel, u_et_name);
     }
 
-    public void updateStratumInfoById(String oldStratumId, String stratumId,
+    public void updateStratumInfoById(String stratumId,
                                     String stratumName, double stratumLen,
                                     String stratumAdd, String stratumPro,
                                     String integrity) throws DataAccessException {
-        handleMapper.updateStratumInfoById(oldStratumId, stratumId, stratumName,
+        handleMapper.updateStratumInfoById(stratumId, stratumName,
                 stratumLen, stratumAdd, stratumPro, integrity);
     }
 
-    public void deleteImageInfoByImageName(String image_name) throws DataAccessException {
-        handleMapper.deleteImageInfoByImageName(image_name);
+    public void deleteImageInfoByImageId(String image_id) throws DataAccessException {
+        handleMapper.deleteImageInfoByImageId(image_id);
     }
 
-    public void deleteUserInfoByAccount(String u_account) throws DataAccessException {
-        handleMapper.deleteUserInfoByAccount(u_account);
+    public void deleteUserInfoById(String id) throws DataAccessException {
+        handleMapper.deleteUserInfoById(id);
     }
 
     public void deleteStratumInfoById(String stratum_id) throws DataAccessException {
@@ -197,5 +194,13 @@ public class HandleService {
             handleMapper.updateStratumIntegrity(stratumId, isValid ? "YES" : "NO");
         }
         return integrityIssues;
+    }
+
+    public void logOperation(Long userId, String operationType, String operationContent, String operationResult) {
+        handleMapper.insertOperationLog(userId, operationType, operationContent, operationResult);
+    }
+
+    public List<OperationLogResultDTO> getOperationLogs(Long userId, Integer limit) {
+        return handleMapper.getOperationLogs(userId, limit);
     }
 }

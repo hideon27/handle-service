@@ -8,6 +8,9 @@ import lombok.Data;
 @ApiModel(value = "岩芯查询请求", description = "查询岩心段信息的请求参数")
 public class CoreSegmentQueryDTO {
 
+    @ApiModelProperty(value = "图像ID", example = "1")
+    private String imageId;
+
     @ApiModelProperty(value = "图像名称", example = "IMG2023001")
     private String imageName;
 

@@ -15,13 +15,14 @@ import org.springframework.dao.DataAccessException;
 import com.example.handle.dto.resultdata.StratumSegmentDTO;
 import java.util.List;
 import java.util.Map;
+import com.example.handle.dto.resultdata.OperationLogResultDTO;
 
 @Mapper
 public interface HandleMapper {
 
     //// 1. 用户认证相关方法
-    @Select("SELECT COUNT(*) FROM users WHERE u_account = #{u_account} AND u_password = #{u_password}")
-    int getResultByNamePassword(@Param("u_account") String u_account, 
+    @Select("SELECT id FROM users WHERE u_account = #{u_account} AND u_password = #{u_password}")
+    Long getResultByNamePassword(@Param("u_account") String u_account, 
                                @Param("u_password") String u_password);
 
     @Select("SELECT COUNT(*) FROM administrators WHERE a_account = #{a_account} AND a_password = #{a_password}")
@@ -149,7 +150,7 @@ public interface HandleMapper {
 
     @Results({
             @Result(property = "id", column = "id"),
-            @Result(property = "imageId", column = "image_id"),
+            @Result(property = "imageId", column = "image_id"), 
             @Result(property = "imageName", column = "image_name"),
             @Result(property = "imagePath", column = "image_path"),
             @Result(property = "uploadTime", column = "upload_time"),
@@ -163,10 +164,15 @@ public interface HandleMapper {
             @Result(property = "stratumLen", column = "stratum_len"),
             @Result(property = "editTime", column = "edit_time")
     })
-    @Select("SELECT * FROM core_segments WHERE image_name = #{image_name}")
-    List<CoreSegments> getImageInfoByName(@Param("image_name") String image_name) throws DataAccessException;
+    @Select("<script>" +
+            "SELECT * FROM core_segments WHERE 1=1" +
+            "<if test='image_id != null'> AND image_id = #{image_id}</if>" + 
+            "<if test='image_name != null'> AND image_name = #{image_name}</if>" +
+            "</script>")
+    List<CoreSegments> getImageInfoByIdAndName(@Param("image_id") String image_id,@Param("image_name") String image_name) throws DataAccessException;
 
     @Results({
+            @Result(property = "imageId", column = "image_id"),
             @Result(property = "imageName", column = "image_name"),
             @Result(property = "stratumName", column = "stratum_name"),
             @Result(property = "segStart", column = "seg_start"),
@@ -254,26 +260,42 @@ public interface HandleMapper {
     List<Users> getUserInfoByAccNum(@Param("account") String account,
                                    @Param("num") String num) throws DataAccessException;
 
-    @Update("UPDATE core_segments SET " +
-            "image_name = #{imageName}, " +
-            "stratum_id = #{stratumId}, " +
-            "seg_start = #{segStart}, " +
-            "seg_end = #{segEnd}, " +
-            "seg_len = #{segLen}, " +
-            "seg_type = #{segType} " +
-            "WHERE image_name = #{oldImageName}")
+    @Update("<script>" +
+            "UPDATE core_segments " +
+            "<set>" +
+            "<if test='imageName != \"\"'>image_name = #{imageName},</if> " +
+            "<if test='stratumId != \"\"'>stratum_id = #{stratumId},</if> " +
+            "<if test='segStart != -1'>seg_start = #{segStart},</if> " +
+            "<if test='segEnd != -1'>seg_end = #{segEnd},</if> " +
+            "<if test='segLen != -1'>seg_len = #{segLen},</if> " +
+            "<if test='segType != \"\"'>seg_type = #{segType}</if> " +
+            "</set>" +
+            "WHERE image_id = #{imageId}" +
+            "</script>")
     void updateImageInfoByName(@Param("imageName") String imageName,
-                              @Param("stratumId") String stratumId,
+                              @Param("stratumId") String stratumId,     
                               @Param("segStart") double segStart,
                               @Param("segEnd") double segEnd,
                               @Param("segLen") double segLen,
                               @Param("segType") String segType,
-                              @Param("oldImageName") String oldImageName);
+                              @Param("imageId") String imageId) throws DataAccessException;
 
-    @Update("update users set u_account = #{u_account}, u_num = #{u_num}, u_password = #{u_password}, " +
-            "u_name = #{u_name}, u_sex = #{u_sex}, u_id = #{u_id}, u_email = #{u_email}, " +
-            "u_tel = #{u_tel}, u_et_name = #{u_et_name} where u_account = #{u_oldAccount}")
-    void updateUserInfoByAccount(@Param("u_oldAccount") String u_oldAccount,
+    @Update("<script>" +
+            "UPDATE users" +
+            "<set>" +
+            "<if test='u_account != \"\"'>u_account = #{u_account},</if>" +
+            "<if test='u_num != \"\"'>u_num = #{u_num},</if>" +
+            "<if test='u_password != \"\"'>u_password = #{u_password},</if>" +
+            "<if test='u_name != \"\"'>u_name = #{u_name},</if>" +
+            "<if test='u_sex != \"\"'>u_sex = #{u_sex},</if>" +
+            "<if test='u_id != \"\"'>u_id = #{u_id},</if>" +
+            "<if test='u_email != \"\"'>u_email = #{u_email},</if>" +
+            "<if test='u_tel != \"\"'>u_tel = #{u_tel},</if>" +
+            "<if test='u_et_name != \"\"'>u_et_name = #{u_et_name}</if>" +
+            "</set>" +
+            "WHERE id = #{id}" +
+            "</script>")
+    void updateUserInfoByAccount(@Param("id") String id,
                                 @Param("u_account") String u_account,
                                 @Param("u_num") String u_num,
                                 @Param("u_password") String u_password,
@@ -284,27 +306,29 @@ public interface HandleMapper {
                                 @Param("u_tel") String u_tel,
                                 @Param("u_et_name") String u_et_name);
 
-    @Update("UPDATE stratums SET " +
-            "stratum_id = #{stratum_id}, " +
-            "stratum_name = #{stratum_name}, " +
-            "stratum_len = #{stratum_len}, " +
-            "stratum_add = #{stratum_add}, " +
-            "stratum_pro = #{stratum_pro}, " +
-            "integrity = #{integrity} " +
-            "WHERE stratum_id = #{old_stratum_id}")
-    void updateStratumInfoById(@Param("old_stratum_id") String old_stratum_id,
-                              @Param("stratum_id") String stratum_id,
+    @Update("<script>" +
+            "UPDATE stratums" +
+            "<set>" +
+            "<if test='stratum_name != \"\"'>stratum_name = #{stratum_name},</if>" +
+            "<if test='stratum_len != -1'>stratum_len = #{stratum_len},</if>" +
+            "<if test='stratum_add != \"\"'>stratum_add = #{stratum_add},</if>" +
+            "<if test='stratum_pro != \"\"'>stratum_pro = #{stratum_pro},</if>" +
+            "<if test='integrity != \"\"'>integrity = #{integrity}</if>" +
+            "</set>" +
+            "WHERE stratum_id = #{stratum_id}" +
+            "</script>")
+    void updateStratumInfoById(@Param("stratum_id") String stratum_id,
                               @Param("stratum_name") String stratum_name,
                               @Param("stratum_len") double stratum_len,
                               @Param("stratum_add") String stratum_add,
                               @Param("stratum_pro") String stratum_pro,
                               @Param("integrity") String integrity) throws DataAccessException;
 
-    @Delete("delete from core_segments where image_name = #{image_name}")
-    void deleteImageInfoByImageName(@Param("image_name") String image_name);
+    @Delete("delete from core_segments where image_id = #{image_id}")
+    void deleteImageInfoByImageId(@Param("image_id") String image_id) throws DataAccessException;
 
-    @Delete("delete from users where u_account = #{u_account}")
-    void deleteUserInfoByAccount(@Param("u_account") String u_account);
+    @Delete("delete from users where id = #{id}")
+    void deleteUserInfoById(@Param("id") String id) throws DataAccessException;
 
     @Delete("delete from stratums where stratum_id = #{stratum_id}")
     void deleteStratumInfoById(@Param("stratum_id") String stratum_id) throws DataAccessException;
@@ -327,5 +351,29 @@ public interface HandleMapper {
 
     @Select("SELECT stratum_id FROM stratums WHERE integrity = 'NO'")
     List<Map<String, Object>> getAllStrataWithIssues();
+
+    @Insert("INSERT INTO user_operation_logs (user_id, operation_type, operation_content, operation_result) " +
+            "VALUES (#{userId}, #{operationType}, #{operationContent}, #{operationResult})")
+    void insertOperationLog(@Param("userId") Long userId,
+                           @Param("operationType") String operationType,
+                           @Param("operationContent") String operationContent,
+                           @Param("operationResult") String operationResult);
+
+    @Results({
+        @Result(property = "id", column = "id"),
+        @Result(property = "userId", column = "user_id"),
+        @Result(property = "operationType", column = "operation_type"),
+        @Result(property = "operationContent", column = "operation_content"),
+        @Result(property = "operationResult", column = "operation_result"),
+        @Result(property = "operationTime", column = "operation_time")
+    })
+    @Select("<script>" +
+            "SELECT * FROM user_operation_logs " +
+            "<if test='userId != null'> WHERE user_id = #{userId} </if>" +
+            "ORDER BY operation_time DESC " +
+            "LIMIT #{limit}" +
+            "</script>")
+    List<OperationLogResultDTO> getOperationLogs(@Param("userId") Long userId, @Param("limit") Integer limit);
+
 }
 

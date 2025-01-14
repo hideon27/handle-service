@@ -1,4 +1,3 @@
-
 FROM openjdk:17
 
 # 设置工作目录
@@ -8,7 +7,8 @@ WORKDIR /app
 RUN mkdir -p /app/upload \
     /app/stratum-integrity \
     /app/core-integrity \
-    /app/valid-core
+    /app/valid-core \
+    /app/operation-log
 
 # 复制项目JAR包到容器中
 COPY target/*.jar app.jar
