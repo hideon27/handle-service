@@ -194,16 +194,15 @@ public class HandleController {
         }
     }
 
-
-    @ApiOperation("上传图片(图片传递)")
-    @PostMapping("/uploadimage")
+    @ApiOperation("上传图片")
+    @PostMapping("/image/upload")
     public ApiResponse<?> uploadImage(@RequestParam("picture") MultipartFile picture,
-                                     @RequestParam("image_id") String imageId) {
+                                    @RequestParam("image_id") String imageId) {
         if (picture.isEmpty()) {
             return ApiResponse.fail("未上传文件");
         }
         try {
-            // 保存上传的文件作为备份
+            // 保存上传的文件
             String fileName = imageId + ".jpg";
             String filePath = uploadDir + "/" + fileName;
             File file = new File(filePath);
@@ -211,9 +210,30 @@ public class HandleController {
             // 使用Files API来保存文件，这样更安全
             Files.copy(picture.getInputStream(), file.toPath(), 
                       java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            
+            return ApiResponse.success("图片上传成功");
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ApiResponse.fail("文件上传失败: " + e.getMessage());
+        }
+    }
 
-            // 获取Base64编码
-            String base64Image = Base64Utils.encodeToString(picture.getBytes());
+    @ApiOperation("处理图片")
+    @GetMapping("/image/process")
+    public ApiResponse<?> processImage(@RequestParam("image_id") String imageId) {
+        try {
+            String fileName = imageId + ".jpg";
+            String filePath = uploadDir + "/" + fileName;
+            File file = new File(filePath);
+            
+            if (!file.exists()) {
+                return ApiResponse.fail("图片不存在");
+            }
+
+            // 读取文件并转换为Base64
+            byte[] fileContent = Files.readAllBytes(file.toPath());
+            String base64Image = Base64Utils.encodeToString(fileContent);
             
             // 构建请求数据
             Map<String, String> requestBody = new HashMap<>();
@@ -236,8 +256,8 @@ public class HandleController {
             }
             
         } catch (IOException e) {
-            e.printStackTrace(); // 添加详细的错误日志
-            return ApiResponse.fail("文件处理失败: " + e.getMessage());
+            e.printStackTrace();
+            return ApiResponse.fail("图片处理失败: " + e.getMessage());
         }
     }
 
