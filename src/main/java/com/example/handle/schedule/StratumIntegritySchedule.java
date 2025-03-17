@@ -1,7 +1,7 @@
 package com.example.handle.schedule;
 
 import com.example.handle.dto.resultdata.StratumSegmentDTO;
-import com.example.handle.mapper.HandleMapper;
+import com.example.handle.mapper.StratumMapper;
 import com.example.handle.model.Stratums;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class StratumIntegritySchedule {
 
     @Autowired
-    private HandleMapper handleMapper;
+    private StratumMapper stratumMapper;
     
     @Value("${file_windows.stratum-integrity-result-dir}")
     private String stratumResultDir;
@@ -49,7 +49,7 @@ public class StratumIntegritySchedule {
             String validCorePath = validCoreDir + File.separator + "valid_core_segments_" + timestamp + ".csv";
             
             log.info("Getting all stratums...");
-            List<Stratums> allStratums = handleMapper.getAllStratums().stream()
+            List<Stratums> allStratums = stratumMapper.getAllStratums().stream()
                 .filter(s -> s != null && s.getStratumId() != null)
                 .collect(Collectors.toList());
             log.info("Found {} valid stratums", allStratums.size());
@@ -63,8 +63,8 @@ public class StratumIntegritySchedule {
                 log.info("Processing stratum: {}", stratumId);
                 
                 try {
-                    Double stratumLength = handleMapper.getStratumLength(stratumId);
-                    List<StratumSegmentDTO> segments = handleMapper.getStratumAndSegments(stratumId).stream()
+                    Double stratumLength = stratumMapper.getStratumLength(stratumId);
+                    List<StratumSegmentDTO> segments = stratumMapper.getStratumAndSegments(stratumId).stream()
                         .filter(segment -> segment != null)
                         .collect(Collectors.toList());
                     
@@ -77,7 +77,7 @@ public class StratumIntegritySchedule {
                             .stratumAdd(stratum.getStratumAdd())
                             .build();
                         allResults.add(emptySegment);
-                        handleMapper.updateStratumIntegrity(stratumId, "NO");
+                        stratumMapper.updateStratumIntegrity(stratumId, "NO");
                         continue;
                     }
                     
@@ -102,7 +102,7 @@ public class StratumIntegritySchedule {
                         
                         int sequenceNo = 1;
                         for (StratumSegmentDTO segment : validSegments) {
-                            handleMapper.updateSequenceNo(stratumId, segment.getSegStart(), sequenceNo);
+                            stratumMapper.updateSequenceNo(stratumId, segment.getSegStart(), sequenceNo);
                             segment.setSequenceNo(sequenceNo++);
                         }
                         
@@ -111,18 +111,18 @@ public class StratumIntegritySchedule {
                     }
                     
                     allResults.addAll(segments);
-                    handleMapper.updateStratumIntegrity(stratumId, isValid ? "YES" : "NO");
+                    stratumMapper.updateStratumIntegrity(stratumId, isValid ? "YES" : "NO");
                     
                 } catch (Exception e) {
                     log.error("Failed to process stratum: {}", stratumId, e);
                     StratumSegmentDTO errorSegment = StratumSegmentDTO.builder()
                         .stratumId(stratumId)
                         .stratumName(stratum.getStratumName())
-                        .stratumLen(handleMapper.getStratumLength(stratumId))
+                        .stratumLen(stratumMapper.getStratumLength(stratumId))
                         .stratumAdd(stratum.getStratumAdd())
                         .build();
                     allResults.add(errorSegment);
-                    handleMapper.updateStratumIntegrity(stratumId, "NO");
+                    stratumMapper.updateStratumIntegrity(stratumId, "NO");
                 }
             }
             
@@ -181,7 +181,7 @@ public class StratumIntegritySchedule {
             // 确保所有地层都被写入
             for (Stratums stratum : allStratums) {
                 String stratumId = stratum.getStratumId();
-                Double stratumLen = handleMapper.getStratumLength(stratumId);
+                Double stratumLen = stratumMapper.getStratumLength(stratumId);
                 
                 // 查找该地层的所有岩心段
                 List<StratumSegmentDTO> segments = results.stream()
