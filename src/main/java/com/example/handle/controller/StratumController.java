@@ -2,7 +2,6 @@ package com.example.handle.controller;
 
 import com.example.handle.dto.ApiResponse;
 import com.example.handle.dto.resultdata.EngineeringDTO;
-import com.example.handle.dto.resultdata.ImageAndStratumDTO;
 import com.example.handle.dto.resultdata.StratumDTO;
 import com.example.handle.model.Stratums;
 import com.example.handle.service.StratumService;
