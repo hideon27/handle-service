@@ -1,7 +1,6 @@
 package com.example.handle.controller;
 
 import com.example.handle.dto.ApiResponse;
-import com.example.handle.model.CoreSegments;
 import com.example.handle.service.ImageService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -52,14 +51,22 @@ public class ImageController {
     @ApiOperation("获得图片信息")
     @GetMapping("/change/showImageInfo")
     public ApiResponse<?> showImageInfo(@RequestParam(required = false) String imageId,
-                                      @RequestParam(required = false) String imageName) {
-        List<CoreSegments> result = imageService.getImageInfoByIdAndName(imageId, imageName);
+                                      @RequestParam(required = false) String imageName,
+                                      @RequestParam(required = false) String segType,
+                                      @RequestParam(required = false) String segLen,
+                                      @RequestParam(required = false) String segStart,
+                                      @RequestParam(required = false) String segEnd,
+                                      @RequestParam(required = false) String stratumId,
+                                      @RequestParam(required = false) String uploaderNum) {
+        List<Map<String, Object>> result = imageService.getImageInfoByIdAndName(
+                imageId, imageName, segType, segLen, segStart, segEnd, stratumId, uploaderNum);
         return ApiResponse.success(Collections.singletonMap("result", result));
     }
 
     @ApiOperation("更新图片信息")
     @PostMapping("/change/updateSubmit")
-    public ApiResponse<?> updateSubmit(@RequestBody Map<String, String> receivedData) {
+    public ApiResponse<?> updateSubmit(@RequestBody Map<String, String> receivedData,
+                                       @RequestHeader("Authorization") String token) {
         String imageId = receivedData.get("imageId");
         String imageName = receivedData.getOrDefault("imageName", "");
         String stratumId = receivedData.getOrDefault("stratumId", "");
@@ -68,8 +75,8 @@ public class ImageController {
         double segLen = Double.parseDouble(receivedData.getOrDefault("segLen", "-1"));
         String segType = receivedData.getOrDefault("segType", "");
         
-        imageService.updateImageInfoByName(imageName, stratumId, segStart, segEnd, segLen, segType, imageId);
-        return ApiResponse.success(Collections.singletonMap("result", "更新成功"));
+        return imageService.updateImageInfoByName(
+                imageName, stratumId, segStart, segEnd, segLen, segType, imageId, token.substring("Bearer ".length()));
     }
 
     @ApiOperation("删除图片")

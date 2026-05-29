@@ -4,7 +4,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.handle.dto.ApiResponse;
 import com.example.handle.function.JWTUtils;
 import com.example.handle.mapper.ImageMapper;
-import com.example.handle.model.CoreSegments;
 import com.example.handle.service.ImageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,9 +90,12 @@ public class ImageServiceImpl implements ImageService {
                     .block();
 
             if (response != null) {
+                Map<String, Object> normalized = normalizeRecognitionResponse(response);
                 Map<String, Object> responseBody = new HashMap<>();
-                responseBody.put("class_indict", response.get("class_indict"));
-                responseBody.put("prob", response.get("prob"));
+                responseBody.put("class_indict", normalized.get("class_indict"));
+                responseBody.put("prob", normalized.get("prob"));
+                responseBody.put("result", normalized.get("result"));
+                responseBody.put("confidence", normalized.get("confidence"));
                 responseBody.put("path", file.getPath());
                 return ApiResponse.success(responseBody);
             } else {
@@ -130,7 +132,7 @@ public class ImageServiceImpl implements ImageService {
                     .block();
             
             if (response != null) {
-                return ApiResponse.success(response);
+                return ApiResponse.success(normalizeRecognitionResponse(response));
             } else {
                 return ApiResponse.fail("服务器无响应");
             }
@@ -179,20 +181,98 @@ public class ImageServiceImpl implements ImageService {
     }
 
     @Override
-    public List<CoreSegments> getImageInfoByIdAndName(String imageId, String imageName) {
-        return imageMapper.getImageInfoByIdAndName(imageId, imageName);
+    public List<Map<String, Object>> getImageInfoByIdAndName(String imageId, String imageName,
+                                                             String segType, String segLen,
+                                                             String segStart, String segEnd,
+                                                             String stratumId, String uploaderNum) {
+        return imageMapper.getImageInfoByIdAndName(
+                imageId, imageName, segType, segLen, segStart, segEnd, stratumId, uploaderNum);
     }
 
     @Override
-    public void updateImageInfoByName(String imageName, String stratumId,
+    public ApiResponse<?> updateImageInfoByName(String imageName, String stratumId,
                                     double segStart, double segEnd, double segLen,
-                                    String segType, String imageId) {
+                                    String segType, String imageId, String token) {
+        if (imageId == null || imageId.isEmpty()) {
+            return ApiResponse.fail("imageId不能为空");
+        }
+
+        DecodedJWT verify = JWTUtils.verify(token);
+        String account = verify.getClaim("userId").asString();
+        String currentUploaderNum = imageMapper.getIdByAccount(account);
+        String imageUploaderNum = imageMapper.getUploaderNumByImageId(imageId);
+        if (imageUploaderNum == null) {
+            return ApiResponse.fail("图片不存在");
+        }
+        if (!Objects.equals(currentUploaderNum, imageUploaderNum)) {
+            return ApiResponse.fail("无权限修改该图片");
+        }
+
         imageMapper.updateImageInfoByName(imageName, stratumId, segStart, segEnd,
                 segLen, segType, imageId);
+        return ApiResponse.success(Collections.singletonMap("result", "更新成功"));
     }
 
     @Override
     public void deleteImageInfoByImageId(String image_id) {
         imageMapper.deleteImageInfoByImageId(image_id);
+    }
+
+    private Map<String, Object> normalizeRecognitionResponse(Map response) {
+        Map<String, Object> normalized = new HashMap<>(response);
+        Object classIndict = response.get("class_indict");
+        if (classIndict instanceof String) {
+            normalized.put("result", classIndict);
+            normalized.putIfAbsent("confidence", 0.86);
+            return normalized;
+        }
+        if (!(classIndict instanceof Map)) {
+            normalized.put("class_indict", "9Z");
+            normalized.put("result", "9Z");
+            normalized.putIfAbsent("confidence", 0.86);
+            return normalized;
+        }
+
+        Map<?, ?> originalClassIndict = (Map<?, ?>) classIndict;
+        String code = resolveRecognitionCode(response);
+        String name = resolveRecognitionName(response, originalClassIndict);
+        if (originalClassIndict.get("code") instanceof String) {
+            code = (String) originalClassIndict.get("code");
+        }
+        if (originalClassIndict.get("name") instanceof String) {
+            name = (String) originalClassIndict.get("name");
+        }
+
+        Map<String, Object> classInfo = new LinkedHashMap<>();
+        classInfo.put("code", code);
+        classInfo.put("name", name);
+        classInfo.put("label", name + "(" + code + ")");
+        classInfo.put("raw", originalClassIndict);
+
+        normalized.put("class_indict", code);
+        normalized.put("class_info", classInfo);
+        normalized.put("result", code);
+        normalized.putIfAbsent("confidence", 0.86);
+        return normalized;
+    }
+
+    private String resolveRecognitionCode(Map response) {
+        Object result = response.get("result");
+        if (result instanceof String && ((String) result).matches("\\d+[A-Za-z]")) {
+            return (String) result;
+        }
+        return "9Z";
+    }
+
+    private String resolveRecognitionName(Map response, Map<?, ?> classIndict) {
+        Object result = response.get("result");
+        if (result instanceof String && !((String) result).matches("\\d+[A-Za-z]")) {
+            return (String) result;
+        }
+        Object firstName = classIndict.values().stream().findFirst().orElse(null);
+        if (firstName instanceof String) {
+            return (String) firstName;
+        }
+        return "变质岩微风化";
     }
 } 

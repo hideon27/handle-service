@@ -1,0 +1,892 @@
+{
+  "info": {
+    "_postman_id": "handle-service-api-tests",
+    "name": "handle-service 全接口测试",
+    "description": "基于当前后端 Controller 生成的 Postman 测试集合。请配合 docs/handle-service.postman_environment.json 使用。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "let suffix = pm.environment.get('runSuffix');",
+          "if (!suffix) {",
+          "  suffix = Date.now().toString();",
+          "  pm.environment.set('runSuffix', suffix);",
+          "}",
+          "if (!pm.environment.get('testUserAccount')) pm.environment.set('testUserAccount', 'postman_user_' + suffix);",
+          "if (!pm.environment.get('testUserNum')) pm.environment.set('testUserNum', 'UPM' + suffix.slice(-8));",
+          "if (!pm.environment.get('testStratumId')) pm.environment.set('testStratumId', 'S_PM_' + suffix.slice(-8));",
+          "if (!pm.environment.get('testImageId')) pm.environment.set('testImageId', 'IMG_PM_' + suffix.slice(-8));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "用户登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('登录成功', function () { pm.expect(json.success).to.eql(true); });",
+                  "if (json.data && json.data.token) pm.environment.set('token', json.data.token);",
+                  "if (json.data && json.data.userId !== undefined) pm.environment.set('userId', String(json.data.userId));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{loginUsername}}\",\n  \"password\": \"{{loginPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/post/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "post",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "管理员登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('管理员登录成功', function () { pm.expect(json.success).to.eql(true); });",
+                  "if (json.data && json.data.token) pm.environment.set('adminToken', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/post/adminLogin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "post",
+                "adminLogin"
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取当前用户信息",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/userinfo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "userinfo"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('当前用户信息成功', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('包含客户端需要的用户字段', function () {",
+                  "  const user = json.data && json.data.result;",
+                  "  pm.expect(user).to.have.property('id');",
+                  "  pm.expect(user).to.have.property('uName');",
+                  "  pm.expect(user).to.have.property('uAccount');",
+                  "  pm.expect(user).to.have.property('uEmail');",
+                  "  pm.expect(user).to.have.property('uTel');",
+                  "  pm.expect(user).to.have.property('uRegdate');",
+                  "  pm.expect(user).to.have.property('uNum');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Lookup",
+      "item": [
+        {
+          "name": "获取工程队名称列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/getEngineeringTeamName",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "getEngineeringTeamName"
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取地层基础列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/getStratumName",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "getStratumName"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 User",
+      "item": [
+        {
+          "name": "注册测试用户",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUserAccount}}\",\n  \"password\": \"postman123\",\n  \"number\": \"{{testUserNum}}\",\n  \"name\": \"Postman测试用户\",\n  \"sex\": \"男\",\n  \"id\": \"110101199003071235\",\n  \"email\": \"postman@example.com\",\n  \"tel\": \"13800138001\",\n  \"en\": \"第一工程队\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/post/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "post",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "按账号查询测试用户并保存ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && Array.isArray(json.data.result) && json.data.result.length > 0) {",
+                  "  pm.environment.set('testUserDbId', String(json.data.result[0].id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/change/showUserInfo?u_account={{testUserAccount}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "showUserInfo"
+              ],
+              "query": [
+                {
+                  "key": "u_account",
+                  "value": "{{testUserAccount}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "多条件查询用户",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/get/getUserInfo?account={{testUserAccount}}&num={{testUserNum}}&name=Postman测试用户&sex=男&tel=13800138001&etName=第一工程队",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "get",
+                "getUserInfo"
+              ],
+              "query": [
+                {
+                  "key": "account",
+                  "value": "{{testUserAccount}}"
+                },
+                {
+                  "key": "num",
+                  "value": "{{testUserNum}}"
+                },
+                {
+                  "key": "name",
+                  "value": "Postman测试用户"
+                },
+                {
+                  "key": "sex",
+                  "value": "男"
+                },
+                {
+                  "key": "tel",
+                  "value": "13800138001"
+                },
+                {
+                  "key": "etName",
+                  "value": "第一工程队"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "更新测试用户",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{testUserDbId}}\",\n  \"uAccount\": \"{{testUserAccount}}\",\n  \"uNum\": \"{{testUserNum}}\",\n  \"uPassword\": \"postman456\",\n  \"uName\": \"Postman测试用户更新\",\n  \"uSex\": \"男\",\n  \"uId\": \"110101199003071235\",\n  \"uEmail\": \"postman.updated@example.com\",\n  \"uTel\": \"13900139001\",\n  \"uEtName\": \"第一工程队\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/change/updateSubmitUser",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "updateSubmitUser"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Stratum",
+      "item": [
+        {
+          "name": "按地层ID查询详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/change/showStratumInfo?stratumId={{existingStratumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "showStratumInfo"
+              ],
+              "query": [
+                {
+                  "key": "stratumId",
+                  "value": "{{existingStratumId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "多条件查询地层",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/get/getStratumInfo?stratumId={{existingStratumId}}&stratumName=第一地层&stratumLen=100.500&stratumAdd=北京市&stratumPro=P2023001&stratumIntegrity=NO",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "get",
+                "getStratumInfo"
+              ],
+              "query": [
+                {
+                  "key": "stratumId",
+                  "value": "{{existingStratumId}}"
+                },
+                {
+                  "key": "stratumName",
+                  "value": "第一地层"
+                },
+                {
+                  "key": "stratumLen",
+                  "value": "100.500"
+                },
+                {
+                  "key": "stratumAdd",
+                  "value": "北京市"
+                },
+                {
+                  "key": "stratumPro",
+                  "value": "P2023001"
+                },
+                {
+                  "key": "stratumIntegrity",
+                  "value": "NO"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "新增测试地层",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stratumId\": \"{{testStratumId}}\",\n  \"stratumName\": \"Postman测试地层\",\n  \"stratumLen\": \"30.000\",\n  \"stratumAdd\": \"广州市\",\n  \"stratumPro\": \"P2023001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/post/insertStratum",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "post",
+                "insertStratum"
+              ]
+            }
+          }
+        },
+        {
+          "name": "更新测试地层",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stratumId\": \"{{testStratumId}}\",\n  \"stratumName\": \"Postman测试地层更新\",\n  \"stratumLen\": \"30.000\",\n  \"stratumAdd\": \"深圳市\",\n  \"stratumPro\": \"P2023001\",\n  \"stratumIntegrity\": \"NO\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/change/updateSubmitStratum",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "updateSubmitStratum"
+              ]
+            }
+          }
+        },
+        {
+          "name": "指定地层完整性检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/get/checkStratumIntegrity_trigger?stratumId={{existingStratumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "get",
+                "checkStratumIntegrity_trigger"
+              ],
+              "query": [
+                {
+                  "key": "stratumId",
+                  "value": "{{existingStratumId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "全局完整性检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/get/checkStratumIntegrity_notrigger",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "get",
+                "checkStratumIntegrity_notrigger"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Image",
+      "item": [
+        {
+          "name": "上传图片文件",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "picture",
+                  "type": "file",
+                  "src": "C:/Users/hideon27/IdeaProjects/handle-service/src/main/resources/pictures/user00120241205042539.jpg"
+                },
+                {
+                  "key": "image_id",
+                  "value": "{{testImageId}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/image/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "image",
+                "upload"
+              ]
+            }
+          }
+        },
+        {
+          "name": "上传图片并调用识别服务",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "picture",
+                  "type": "file",
+                  "src": "C:/Users/hideon27/IdeaProjects/handle-service/src/main/resources/pictures/user00120241205042539.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/uploadimage_path",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "uploadimage_path"
+              ]
+            }
+          }
+        },
+        {
+          "name": "处理本地图片",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/image/process?image_id={{existingLocalImageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "image",
+                "process"
+              ],
+              "query": [
+                {
+                  "key": "image_id",
+                  "value": "{{existingLocalImageId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('识别成功', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('返回客户端需要的编码', function () {",
+                  "  pm.expect(json.data).to.have.property('class_indict');",
+                  "  pm.expect(json.data.class_indict).to.eql(pm.environment.get('expectedRecognitionCode'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取图片Base64",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/images/{{existingLocalImageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "images",
+                "{{existingLocalImageId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "上传图片信息入库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"IMAGE_ID\": \"{{testImageId}}\",\n  \"IMAGE_NAME\": \"{{testImageName}}\",\n  \"STRATUM_ID\": \"{{testStratumId}}\",\n  \"STRATUM_LEN\": \"30.000\",\n  \"SEG_START\": \"1.000\",\n  \"SEG_END\": \"11.000\",\n  \"SEG_LEN\": \"10.000\",\n  \"SEG_TYPE\": \"{{expectedRecognitionCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/post/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "post",
+                "upload"
+              ]
+            }
+          }
+        },
+        {
+          "name": "查询图片信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/change/showImageInfo?imageId={{testImageId}}&imageName={{testImageName}}&segType={{expectedRecognitionCode}}&segLen=10.000&segStart=1.000&segEnd=11.000&stratumId={{testStratumId}}&uploaderNum={{loginUserNum}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "showImageInfo"
+              ],
+              "query": [
+                {
+                  "key": "imageId",
+                  "value": "{{testImageId}}"
+                },
+                {
+                  "key": "imageName",
+                  "value": "{{testImageName}}"
+                },
+                {
+                  "key": "segType",
+                  "value": "{{expectedRecognitionCode}}"
+                },
+                {
+                  "key": "segLen",
+                  "value": "10.000"
+                },
+                {
+                  "key": "segStart",
+                  "value": "1.000"
+                },
+                {
+                  "key": "segEnd",
+                  "value": "11.000"
+                },
+                {
+                  "key": "stratumId",
+                  "value": "{{testStratumId}}"
+                },
+                {
+                  "key": "uploaderNum",
+                  "value": "{{loginUserNum}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('图片查询成功', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('返回客户端列表所需字段', function () {",
+                  "  const row = json.data && json.data.result && json.data.result[0];",
+                  "  pm.expect(row).to.exist;",
+                  "  ['imageId','imageName','stratumName','segStart','segEnd','imagePath','uploadTime','uploaderNum','stratumId','segLen','segType'].forEach(k => pm.expect(row).to.have.property(k));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "更新图片信息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageId\": \"{{testImageId}}\",\n  \"imageName\": \"{{testUpdatedImageName}}\",\n  \"stratumId\": \"{{testStratumId}}\",\n  \"segStart\": \"2.000\",\n  \"segEnd\": \"12.000\",\n  \"segLen\": \"10.000\",\n  \"segType\": \"{{expectedRecognitionCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/change/updateSubmit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "updateSubmit"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Log",
+      "item": [
+        {
+          "name": "记录操作日志",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"operationType\": \"Postman接口测试\",\n  \"operationContent\": \"上传/查询/修改岩芯段接口测试\",\n  \"operationResult\": \"SUCCESS\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/log/operation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "log",
+                "operation"
+              ]
+            }
+          }
+        },
+        {
+          "name": "查询操作日志",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/log/query?userId={{userId}}&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "log",
+                "query"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Cleanup",
+      "description": "删除测试数据。建议确认新增和更新接口通过后再运行。",
+      "item": [
+        {
+          "name": "删除测试图片",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageId\": \"{{testImageId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/change/deleteImage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "deleteImage"
+              ]
+            }
+          }
+        },
+        {
+          "name": "删除测试地层",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stratumId\": \"{{testStratumId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/change/deleteStratum",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "deleteStratum"
+              ]
+            }
+          }
+        },
+        {
+          "name": "删除测试用户",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{testUserDbId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/change/deleteUser",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "change",
+                "deleteUser"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
